@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows.Input;
 using Centesimo.Application;
@@ -7,27 +8,33 @@ namespace Centesimo.App.ViewModels;
 
 public sealed class CategoryEditorViewModel : ObservableObject
 {
-    private readonly CategoryService _categoryService;
     private static readonly CultureInfo ItalianCulture = CultureInfo.GetCultureInfo("it-IT");
+    private readonly CategoryService _categoryService;
+    private readonly TagService _tagService;
     private Guid? _categoryId;
     private string _name = "";
     private string _selectedIcon = "cart";
     private string _selectedColor = "#176B5B";
     private string _budget = "";
     private string _errorMessage = "";
+    private string _newTagName = "";
     private bool _isSaving;
+    private bool _isTagBusy;
 
     public event EventHandler? Saved;
 
     public IReadOnlyList<string> Icons { get; } = ["cart", "home", "car", "heart", "more"];
     public IReadOnlyList<string> Colors { get; } = ["#176B5B", "#8B4A5D", "#725C00", "#4F5F7A", "#6A4F88"];
+    public ObservableCollection<CategoryTagItemViewModel> Tags { get; } = [];
     public ICommand SaveCommand { get; }
     public ICommand ClearBudgetCommand { get; }
+    public ICommand AddTagCommand { get; }
     public string Title => _categoryId.HasValue ? "Modifica categoria" : "Nuova categoria";
     public string Name { get => _name; set => SetProperty(ref _name, value); }
     public string SelectedIcon { get => _selectedIcon; set => SetProperty(ref _selectedIcon, value); }
     public string SelectedColor { get => _selectedColor; set => SetProperty(ref _selectedColor, value); }
     public string Budget { get => _budget; set => SetProperty(ref _budget, value); }
+    public string NewTagName { get => _newTagName; set => SetProperty(ref _newTagName, value); }
     public string ErrorMessage
     {
         get => _errorMessage;
@@ -39,12 +46,19 @@ public sealed class CategoryEditorViewModel : ObservableObject
     }
     public bool HasError => ErrorMessage.HasValue();
     public bool IsSaving { get => _isSaving; private set => SetProperty(ref _isSaving, value); }
+    public bool IsTagBusy { get => _isTagBusy; private set => SetProperty(ref _isTagBusy, value); }
+    public bool CanManageTags => _categoryId.HasValue;
+    public bool CannotManageTags => !CanManageTags;
+    public bool HasTags => Tags.Count > 0;
+    public bool IsTagEmpty => CanManageTags && !IsTagBusy && !HasTags;
 
-    public CategoryEditorViewModel(CategoryService categoryService)
+    public CategoryEditorViewModel(CategoryService categoryService, TagService tagService)
     {
         _categoryService = categoryService;
+        _tagService = tagService;
         SaveCommand = new AsyncCommand(Save, () => !IsSaving);
         ClearBudgetCommand = new RelayCommand(() => Budget = "");
+        AddTagCommand = new AsyncCommand(AddTag, () => !IsTagBusy);
     }
 
     public void OpenNew()
@@ -55,7 +69,9 @@ public sealed class CategoryEditorViewModel : ObservableObject
         SelectedColor = Colors[0];
         Budget = "";
         ErrorMessage = "";
+        ResetTags();
         OnPropertyChanged(nameof(Title));
+        NotifyTagState();
     }
 
     public void OpenEdit(CategoryItemViewModel category)
@@ -66,7 +82,70 @@ public sealed class CategoryEditorViewModel : ObservableObject
         SelectedColor = category.Color;
         Budget = category.BudgetInput;
         ErrorMessage = "";
+        ResetTags();
         OnPropertyChanged(nameof(Title));
+        NotifyTagState();
+    }
+
+    public async Task LoadTags()
+    {
+        Tags.Clear();
+        if (!_categoryId.HasValue)
+        {
+            NotifyTagState();
+            return;
+        }
+
+        IsTagBusy = true;
+        var result = await _tagService.GetActive(_categoryId.Value);
+        if (result.IsFailure)
+            ErrorMessage = result.Error.Message;
+        else
+            foreach (var tag in result.Value)
+                Tags.Add(new CategoryTagItemViewModel(tag.TagId, tag.Name));
+
+        IsTagBusy = false;
+        NotifyTagState();
+    }
+
+    public async Task<Result> ArchiveTag(Guid tagId)
+    {
+        IsTagBusy = true;
+        var result = await _tagService.Archive(tagId);
+        IsTagBusy = false;
+        if (result.IsSuccess)
+            await LoadTags();
+        else
+            ErrorMessage = result.Error.Message;
+
+        return result;
+    }
+
+    private async Task AddTag()
+    {
+        if (!_categoryId.HasValue)
+        {
+            ErrorMessage = "Salva prima la categoria per aggiungere tag.";
+            return;
+        }
+
+        if (NewTagName.IsEmpty())
+        {
+            ErrorMessage = "Inserisci il nome del tag.";
+            return;
+        }
+
+        IsTagBusy = true;
+        var result = await _tagService.Create(_categoryId.Value, NewTagName);
+        IsTagBusy = false;
+        if (result.IsFailure)
+        {
+            ErrorMessage = result.Error.Message;
+            return;
+        }
+
+        NewTagName = "";
+        await LoadTags();
     }
 
     private async Task Save()
@@ -103,4 +182,21 @@ public sealed class CategoryEditorViewModel : ObservableObject
         var result = await _categoryService.Create(Name, SelectedIcon, SelectedColor, budget);
         return result.IsSuccess ? Result.Success() : Result.Failure(result.Error);
     }
+
+    private void ResetTags()
+    {
+        Tags.Clear();
+        NewTagName = "";
+        IsTagBusy = false;
+    }
+
+    private void NotifyTagState()
+    {
+        OnPropertyChanged(nameof(CanManageTags));
+        OnPropertyChanged(nameof(CannotManageTags));
+        OnPropertyChanged(nameof(HasTags));
+        OnPropertyChanged(nameof(IsTagEmpty));
+    }
 }
+
+public sealed record CategoryTagItemViewModel(Guid TagId, string Name);

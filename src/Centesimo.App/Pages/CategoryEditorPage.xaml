@@ -29,7 +29,64 @@
                        SemanticProperties.Description="Budget mensile in euro" />
                 <Button Text="Rimuovi budget"
                         Command="{Binding ClearBudgetCommand}"
-                        MinimumHeightRequest="48" />                <Label Text="{Binding ErrorMessage}"
+                        MinimumHeightRequest="48" />
+
+                <BoxView HeightRequest="1"
+                         Margin="0,8"
+                         Color="{StaticResource OutlineLight}" />
+
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Tag"
+                           Style="{StaticResource TitleLarge}"
+                           SemanticProperties.HeadingLevel="Level2" />
+                    <Label Text="Salva prima la categoria per aggiungere tag."
+                           Style="{StaticResource BodyMedium}"
+                           IsVisible="{Binding CannotManageTags}" />
+                    <VerticalStackLayout IsVisible="{Binding CanManageTags}"
+                                         Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Entry Text="{Binding NewTagName}"
+                                   Placeholder="Nuovo tag"
+                                   MinimumHeightRequest="48"
+                                   ReturnType="Done"
+                                   ReturnCommand="{Binding AddTagCommand}" />
+                            <Button Grid.Column="1"
+                                    Text="Aggiungi"
+                                    Command="{Binding AddTagCommand}"
+                                    MinimumHeightRequest="48" />
+                        </Grid>
+                        <ActivityIndicator IsRunning="{Binding IsTagBusy}"
+                                           IsVisible="{Binding IsTagBusy}" />
+                        <Label Text="Nessun tag in questa categoria."
+                               Style="{StaticResource BodyMedium}"
+                               IsVisible="{Binding IsTagEmpty}" />
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Tags}"
+                                             Spacing="8">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource SurfaceCard}"
+                                            Padding="12">
+                                        <Grid ColumnDefinitions="*,48" ColumnSpacing="8">
+                                            <Label Text="{Binding Name}"
+                                                   VerticalOptions="Center"
+                                                   Style="{StaticResource TitleMedium}" />
+                                            <Button Grid.Column="1"
+                                                    Text="×"
+                                                    FontSize="22"
+                                                    MinimumHeightRequest="48"
+                                                    MinimumWidthRequest="48"
+                                                    CommandParameter="{Binding .}"
+                                                    Clicked="OnArchiveTagClicked"
+                                                    SemanticProperties.Description="Rimuovi tag" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+
+                <Label Text="{Binding ErrorMessage}"
                        IsVisible="{Binding HasError}"
                        TextColor="#BA1A1A"
                        Style="{StaticResource BodyMedium}" />
