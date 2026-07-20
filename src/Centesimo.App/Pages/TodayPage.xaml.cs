@@ -19,6 +19,9 @@ public partial class TodayPage : ContentPage
         await _viewModel.Load();
     }
 
+    private async void OnExpenseHistoryClicked(object? sender, EventArgs e) =>
+        await Shell.Current.GoToAsync(nameof(ExpenseHistoryPage));
+
     private async void OnAddExpenseClicked(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync(nameof(ExpenseEditorPage));
 }

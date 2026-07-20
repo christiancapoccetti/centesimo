@@ -10,6 +10,9 @@ public sealed class ExpenseService(
     ITagRepository tags,
     IExpenseRepository expenses)
 {
+    public Task<Result<Expense?>> Get(Guid expenseId, CancellationToken cancellationToken = default) =>
+        expenses.Get(expenseId, cancellationToken);
+
     public async Task<Result<Expense>> Create(SaveExpenseRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -36,7 +39,9 @@ public sealed class ExpenseService(
         if (validation.IsFailure)
             return validation;
 
-        return await expenses.Update(request.ToExpense(expenseId), cancellationToken);
+        var updateRequest = request with { PhotoPath = request.PhotoPath ?? found.Value.PhotoPath };
+        var updated = updateRequest.ToExpense(expenseId, found.Value.RecurringPaymentId);
+        return await expenses.Update(updated, cancellationToken);
     }
 
     public async Task<Result> Delete(Guid expenseId, CancellationToken cancellationToken = default)

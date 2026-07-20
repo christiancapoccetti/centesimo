@@ -26,6 +26,28 @@ public sealed class ExpenseService_should_expected_behavior
     }
 
     [Fact]
+    public async Task Update_preserves_metadata_not_owned_by_the_request()
+    {
+        var categories = new FakeCategoryRepository();
+        var category = new Category(Guid.NewGuid(), "Food", "cart", "#123456");
+        categories.Items.Add(category);
+        var recurringPaymentId = Guid.NewGuid();
+        var expense = new Expense(Guid.NewGuid(), category.CategoryId, new Money(100),
+            new DateOnly(2026, 7, 1), photoPath: "photo.jpg", recurringPaymentId: recurringPaymentId);
+        var expenses = new FakeExpenseRepository();
+        expenses.Items.Add(expense);
+        var service = new ExpenseService(categories, new FakeTagRepository(), expenses);
+
+        var result = await service.Update(expense.ExpenseId,
+            new(category.CategoryId, 250, new DateOnly(2026, 7, 2)));
+
+        var updated = Assert.Single(expenses.Items);
+        Assert.True(result.IsSuccess);
+        Assert.Equal("photo.jpg", updated.PhotoPath);
+        Assert.Equal(recurringPaymentId, updated.RecurringPaymentId);
+    }
+
+    [Fact]
     public async Task Reject_archived_category_and_mismatched_or_archived_tag()
     {
         var categories = new FakeCategoryRepository();

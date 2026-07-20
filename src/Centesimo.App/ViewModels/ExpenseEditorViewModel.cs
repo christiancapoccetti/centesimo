@@ -12,6 +12,7 @@ public sealed class ExpenseEditorViewModel : ObservableObject
     private readonly CategoryService _categoryService;
     private readonly TagService _tagService;
     private readonly ExpenseService _expenseService;
+    private Guid? _expenseId;
     private string _amount = "";
     private CategoryOption? _selectedCategory;
     private TagOption? _selectedTag;
@@ -26,6 +27,7 @@ public sealed class ExpenseEditorViewModel : ObservableObject
     public ObservableCollection<CategoryOption> Categories { get; } = [];
     public ObservableCollection<TagOption> Tags { get; } = [];
     public ICommand SaveCommand { get; }
+    public string Title => _expenseId.HasValue ? "Modifica spesa" : "Nuova spesa";
     public string Amount { get => _amount; set => SetProperty(ref _amount, value); }
     public CategoryOption? SelectedCategory { get => _selectedCategory; set => SetProperty(ref _selectedCategory, value); }
     public TagOption? SelectedTag { get => _selectedTag; set => SetProperty(ref _selectedTag, value); }
@@ -56,9 +58,11 @@ public sealed class ExpenseEditorViewModel : ObservableObject
         SaveCommand = new AsyncCommand(Save, () => !IsSaving);
     }
 
-    public async Task Load()
+    public async Task Load(Guid? expenseId = null)
     {
         Reset();
+        _expenseId = expenseId;
+        OnPropertyChanged(nameof(Title));
         IsLoading = true;
         var result = await _categoryService.GetActive();
         if (result.IsFailure)
@@ -66,6 +70,9 @@ public sealed class ExpenseEditorViewModel : ObservableObject
         else
             foreach (var category in result.Value)
                 Categories.Add(new CategoryOption(category.CategoryId, category.Name));
+
+        if (_expenseId.HasValue && !HasError)
+            await LoadExpense(_expenseId.Value);
 
         IsLoading = false;
     }
@@ -88,6 +95,38 @@ public sealed class ExpenseEditorViewModel : ObservableObject
                 Tags.Add(new TagOption(tag.TagId, tag.Name));
 
         OnPropertyChanged(nameof(HasTags));
+    }
+
+    private async Task LoadExpense(Guid expenseId)
+    {
+        var result = await _expenseService.Get(expenseId);
+        if (result.IsFailure)
+        {
+            ErrorMessage = result.Error.Message;
+            return;
+        }
+
+        if (result.Value is null)
+        {
+            ErrorMessage = ApplicationErrors.ExpenseNotFound.Message;
+            return;
+        }
+
+        var expense = result.Value;
+        Amount = expense.Amount.ToDecimal().ToString("0.00", ItalianCulture);
+        OccurredOn = expense.OccurredOn.ToDateTime(TimeOnly.MinValue);
+        Note = expense.Note;
+        SelectedCategory = Categories.FirstOrDefault(category => category.CategoryId == expense.CategoryId);
+        if (SelectedCategory is null)
+        {
+            ErrorMessage = "La categoria originale non è più attiva. Seleziona una nuova categoria.";
+            return;
+        }
+
+        await LoadTags();
+        SelectedTag = Tags.FirstOrDefault(tag => tag.TagId == expense.TagId);
+        if (expense.TagId.HasValue && SelectedTag is null)
+            ErrorMessage = "Il tag originale non è più attivo. Scegli un tag disponibile o salva senza tag.";
     }
 
     private async Task Save()
@@ -113,7 +152,14 @@ public sealed class ExpenseEditorViewModel : ObservableObject
             DateOnly.FromDateTime(OccurredOn),
             SelectedTag?.TagId,
             Note);
-        var result = await _expenseService.Create(request);
+        Result result;
+        if (_expenseId.HasValue)
+            result = await _expenseService.Update(_expenseId.Value, request);
+        else
+        {
+            var created = await _expenseService.Create(request);
+            result = created.IsSuccess ? Result.Success() : Result.Failure(created.Error);
+        }
         IsSaving = false;
         if (result.IsFailure)
         {

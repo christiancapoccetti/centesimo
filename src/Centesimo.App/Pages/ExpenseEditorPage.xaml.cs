@@ -2,9 +2,10 @@ using Centesimo.App.ViewModels;
 
 namespace Centesimo.App.Pages;
 
-public partial class ExpenseEditorPage : ContentPage
+public partial class ExpenseEditorPage : ContentPage, IQueryAttributable
 {
     private readonly ExpenseEditorViewModel _viewModel;
+    private Guid? _expenseId;
 
     public ExpenseEditorPage(ExpenseEditorViewModel viewModel)
     {
@@ -14,14 +15,27 @@ public partial class ExpenseEditorPage : ContentPage
         viewModel.Saved += OnSaved;
     }
 
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        _expenseId = query.TryGetValue("expenseId", out var value)
+            && Guid.TryParse(value?.ToString(), out var expenseId)
+                ? expenseId
+                : null;
+    }
+
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await _viewModel.Load();
+        await _viewModel.Load(_expenseId);
     }
 
-    private async void OnCategoryChanged(object? sender, EventArgs e) =>
+    private async void OnCategoryChanged(object? sender, EventArgs e)
+    {
+        if (_viewModel.IsLoading)
+            return;
+
         await _viewModel.LoadTags();
+    }
 
     private async void OnSaved(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync("..");

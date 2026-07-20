@@ -15,6 +15,11 @@
                            Style="{StaticResource BodyMedium}" />
                 </VerticalStackLayout>
 
+                <Button Text="Tutte le spese"
+                        Clicked="OnExpenseHistoryClicked"
+                        MinimumHeightRequest="48"
+                        SemanticProperties.Hint="Apre lo storico mensile delle spese" />
+
                 <ActivityIndicator IsRunning="{Binding IsLoading}"
                                    IsVisible="{Binding IsLoading}"
                                    MinimumHeightRequest="48" />
