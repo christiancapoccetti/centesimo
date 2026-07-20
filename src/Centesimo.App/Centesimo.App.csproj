@@ -7,7 +7,6 @@
     <SingleProject>true</SingleProject>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <MauiXamlInflator>SourceGen</MauiXamlInflator>
     <ApplicationTitle>Centesimo</ApplicationTitle>
     <ApplicationId>it.christiancapoccetti.centesimo</ApplicationId>
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>

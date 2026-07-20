@@ -10,6 +10,7 @@ public partial class AppShell : Shell
         RecurringPaymentsPage recurringPaymentsPage)
     {
         InitializeComponent();
+        Routing.RegisterRoute(nameof(ExpenseEditorPage), typeof(ExpenseEditorPage));
         var tabs = new TabBar
         {
             Items =

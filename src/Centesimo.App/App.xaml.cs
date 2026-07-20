@@ -2,14 +2,14 @@ namespace Centesimo.App;
 
 public partial class App : Microsoft.Maui.Controls.Application
 {
-    private readonly AppShell _appShell;
+    private readonly Func<AppShell> _appShellFactory;
 
-    public App(AppShell appShell)
+    public App(Func<AppShell> appShellFactory)
     {
         InitializeComponent();
-        _appShell = appShell;
+        _appShellFactory = appShellFactory;
     }
 
     protected override Window CreateWindow(IActivationState? activationState) =>
-        new(_appShell);
+        new(_appShellFactory());
 }

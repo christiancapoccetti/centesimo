@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             x:Class="Centesimo.App.Pages.ExpenseEditorPage"
+             Title="Nuova spesa"
+             SafeAreaEdges="All">
+    <Grid Padding="24" RowDefinitions="Auto,*,Auto" RowSpacing="16">
+        <Grid Grid.Row="0" ColumnDefinitions="48,*,48">
+            <Button Grid.Column="0"
+                    Text="‹"
+                    FontSize="28"
+                    MinimumHeightRequest="48"
+                    MinimumWidthRequest="48"
+                    Clicked="OnCancelClicked"
+                    SemanticProperties.Description="Annulla inserimento" />
+            <Label Grid.Column="1"
+                   Text="Nuova spesa"
+                   Style="{StaticResource HeadlineSmall}"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   SemanticProperties.HeadingLevel="Level1" />
+        </Grid>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="20">
+                <ActivityIndicator IsRunning="{Binding IsLoading}"
+                                   IsVisible="{Binding IsLoading}" />
+
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Importo"
+                           Style="{StaticResource TitleMedium}" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                        <Label Text="€"
+                               FontSize="32"
+                               VerticalOptions="Center" />
+                        <Entry Grid.Column="1"
+                               Text="{Binding Amount}"
+                               Placeholder="0,00"
+                               Keyboard="Numeric"
+                               FontSize="32"
+                               MinimumHeightRequest="56"
+                               SemanticProperties.Description="Importo della spesa in euro" />
+                    </Grid>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Categoria"
+                           Style="{StaticResource TitleMedium}" />
+                    <Picker ItemsSource="{Binding Categories}"
+                            ItemDisplayBinding="{Binding Name}"
+                            SelectedItem="{Binding SelectedCategory}"
+                            SelectedIndexChanged="OnCategoryChanged"
+                            MinimumHeightRequest="48"
+                            Title="Seleziona categoria" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="8"
+                                     IsVisible="{Binding HasTags}">
+                    <Label Text="Tag (facoltativo)"
+                           Style="{StaticResource TitleMedium}" />
+                    <Picker ItemsSource="{Binding Tags}"
+                            ItemDisplayBinding="{Binding Name}"
+                            SelectedItem="{Binding SelectedTag}"
+                            MinimumHeightRequest="48"
+                            Title="Nessun tag" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Data"
+                           Style="{StaticResource TitleMedium}" />
+                    <DatePicker Date="{Binding OccurredOn}"
+                                MaximumDate="{x:Static sys:DateTime.Today}"
+                                MinimumHeightRequest="48" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Nota (facoltativa)"
+                           Style="{StaticResource TitleMedium}" />
+                    <Editor Text="{Binding Note}"
+                            Placeholder="Aggiungi una nota"
+                            AutoSize="TextChanges"
+                            MinimumHeightRequest="96"
+                            MaxLength="500" />
+                </VerticalStackLayout>
+
+                <Label Text="{Binding ErrorMessage}"
+                       IsVisible="{Binding HasError}"
+                       TextColor="#B3261E" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Button Grid.Row="2"
+                Text="Salva spesa"
+                Command="{Binding SaveCommand}"
+                Style="{StaticResource PrimaryActionButton}"
+                HorizontalOptions="Fill"
+                MinimumHeightRequest="56" />
+    </Grid>
+</ContentPage>

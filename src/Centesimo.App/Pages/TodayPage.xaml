@@ -4,35 +4,144 @@
              x:Class="Centesimo.App.Pages.TodayPage"
              Title="Oggi"
              SafeAreaEdges="All">
-    <Grid Padding="24" RowDefinitions="*,Auto" RowSpacing="24">
+    <Grid Padding="24" RowDefinitions="*,Auto" RowSpacing="16">
         <ScrollView Grid.Row="0">
             <VerticalStackLayout Spacing="24">
                 <VerticalStackLayout Spacing="4">
                     <Label Text="Oggi"
                            Style="{StaticResource HeadlineLarge}"
                            SemanticProperties.HeadingLevel="Level1" />
-                    <Label Text="Tieni sotto controllo le spese di oggi."
+                    <Label Text="Il riepilogo delle tue spese"
                            Style="{StaticResource BodyMedium}" />
                 </VerticalStackLayout>
 
-                <Border Style="{StaticResource SurfaceCard}">
-                    <VerticalStackLayout Style="{StaticResource EmptyStateLayout}">
-                        <Label Text="Nessuna spesa oggi"
-                               Style="{StaticResource TitleLarge}"
-                               HorizontalTextAlignment="Center"
-                               SemanticProperties.HeadingLevel="Level2" />
-                        <Label Text="Aggiungi la prima spesa per iniziare."
-                               Style="{StaticResource BodyMedium}"
-                               HorizontalTextAlignment="Center" />
+                <ActivityIndicator IsRunning="{Binding IsLoading}"
+                                   IsVisible="{Binding IsLoading}"
+                                   MinimumHeightRequest="48" />
+
+                <Border Style="{StaticResource SurfaceCard}"
+                        IsVisible="{Binding HasError}">
+                    <Label Text="{Binding ErrorMessage}"
+                           TextColor="#B3261E" />
+                </Border>
+
+                <Border Style="{StaticResource SurfaceCard}"
+                        IsVisible="{Binding HasCategories}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Spese del mese"
+                               Style="{StaticResource TitleMedium}" />
+                        <Label Text="{Binding MonthlyTotal}"
+                               Style="{StaticResource HeadlineLarge}" />
+                        <Label Text="{Binding BudgetSummary}"
+                               Style="{StaticResource BodyMedium}" />
+                        <ProgressBar Progress="{Binding BudgetProgress}"
+                                     HeightRequest="8"
+                                     ProgressColor="{StaticResource PrimaryLight}" />
                     </VerticalStackLayout>
                 </Border>
+
+                <VerticalStackLayout Spacing="12"
+                                     IsVisible="{Binding HasCategories}">
+                    <Label Text="Categorie questo mese"
+                           Style="{StaticResource TitleLarge}"
+                           SemanticProperties.HeadingLevel="Level2" />
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Categories}"
+                                         Spacing="8">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource SurfaceCard}"
+                                        Padding="16">
+                                    <Grid ColumnDefinitions="48,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="6">
+                                        <Border Grid.RowSpan="3"
+                                                HeightRequest="48"
+                                                WidthRequest="48"
+                                                BackgroundColor="{Binding Color}"
+                                                StrokeThickness="0"
+                                                StrokeShape="RoundRectangle 24">
+                                            <Label Text="{Binding Icon}"
+                                                   TextColor="White"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center" />
+                                        </Border>
+                                        <Label Grid.Column="1"
+                                               Text="{Binding Name}"
+                                               Style="{StaticResource TitleMedium}" />
+                                        <Label Grid.Row="1"
+                                               Grid.Column="1"
+                                               Text="{Binding AmountSummary}"
+                                               Style="{StaticResource BodyMedium}" />
+                                        <ProgressBar Grid.Row="2"
+                                                     Grid.Column="1"
+                                                     Progress="{Binding Progress}"
+                                                     HeightRequest="6"
+                                                     ProgressColor="{StaticResource PrimaryLight}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Spese di oggi"
+                           Style="{StaticResource TitleLarge}"
+                           SemanticProperties.HeadingLevel="Level2" />
+                    <Border Style="{StaticResource SurfaceCard}"
+                            IsVisible="{Binding IsExpenseEmpty}">
+                        <VerticalStackLayout Style="{StaticResource EmptyStateLayout}">
+                            <Label Text="Nessuna spesa oggi"
+                                   Style="{StaticResource TitleLarge}"
+                                   HorizontalTextAlignment="Center" />
+                            <Label Text="Aggiungi la prima spesa per iniziare."
+                                   Style="{StaticResource BodyMedium}"
+                                   HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Expenses}"
+                                         Spacing="8">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource SurfaceCard}"
+                                        Padding="16">
+                                    <Grid ColumnDefinitions="48,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
+                                        <Border Grid.RowSpan="2"
+                                                HeightRequest="48"
+                                                WidthRequest="48"
+                                                BackgroundColor="{Binding Color}"
+                                                StrokeThickness="0"
+                                                StrokeShape="RoundRectangle 24">
+                                            <Label Text="{Binding Icon}"
+                                                   TextColor="White"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center" />
+                                        </Border>
+                                        <Label Grid.Column="1"
+                                               Text="{Binding CategoryName}"
+                                               Style="{StaticResource TitleMedium}" />
+                                        <Label Grid.Column="2"
+                                               Text="{Binding Amount}"
+                                               Style="{StaticResource TitleMedium}" />
+                                        <Label Grid.Row="1"
+                                               Grid.Column="1"
+                                               Grid.ColumnSpan="2"
+                                               Text="{Binding Note}"
+                                               IsVisible="{Binding HasNote}"
+                                               Style="{StaticResource BodyMedium}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
             </VerticalStackLayout>
         </ScrollView>
 
         <Button Grid.Row="1"
                 Text="Aggiungi spesa"
+                Clicked="OnAddExpenseClicked"
                 Style="{StaticResource PrimaryActionButton}"
                 HorizontalOptions="Fill"
+                MinimumHeightRequest="56"
                 SemanticProperties.Hint="Apre l'inserimento di una nuova spesa" />
     </Grid>
 </ContentPage>

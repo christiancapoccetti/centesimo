@@ -4,6 +4,20 @@ namespace Centesimo.Application;
 
 public sealed class TagService(ICategoryRepository categories, ITagRepository tags)
 {
+    public async Task<Result<IReadOnlyList<Tag>>> GetActive(Guid categoryId,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await tags.GetByCategory(categoryId, cancellationToken);
+        if (result.IsFailure)
+            return Result<IReadOnlyList<Tag>>.Failure(result.Error);
+
+        var activeTags = result.Value
+            .Where(tag => !tag.IsArchived)
+            .OrderBy(tag => tag.Name)
+            .ToList();
+        return Result<IReadOnlyList<Tag>>.Success(activeTags);
+    }
+
     public async Task<Result<Tag>> Create(Guid categoryId, string name,
         CancellationToken cancellationToken = default)
     {
