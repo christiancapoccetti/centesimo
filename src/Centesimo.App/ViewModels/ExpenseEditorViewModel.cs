@@ -46,6 +46,7 @@ public sealed class ExpenseEditorViewModel : ObservableObject
         }
     }
     public bool HasError => ErrorMessage.HasValue();
+    public bool IsEditMode => _expenseId.HasValue;
 
     public ExpenseEditorViewModel(
         CategoryService categoryService,
@@ -63,6 +64,7 @@ public sealed class ExpenseEditorViewModel : ObservableObject
         Reset();
         _expenseId = expenseId;
         OnPropertyChanged(nameof(Title));
+        OnPropertyChanged(nameof(IsEditMode));
         IsLoading = true;
         var result = await _categoryService.GetActive();
         if (result.IsFailure)
@@ -129,6 +131,24 @@ public sealed class ExpenseEditorViewModel : ObservableObject
             ErrorMessage = "Il tag originale non è più attivo. Scegli un tag disponibile o salva senza tag.";
     }
 
+    public async Task<Result> Delete()
+    {
+        if (!_expenseId.HasValue)
+            return Result.Failure(ApplicationErrors.ExpenseNotFound);
+
+        IsSaving = true;
+        ErrorMessage = "";
+        var result = await _expenseService.Delete(_expenseId.Value);
+        IsSaving = false;
+        if (result.IsFailure)
+        {
+            ErrorMessage = result.Error.Message;
+            return result;
+        }
+
+        Saved?.Invoke(this, EventArgs.Empty);
+        return result;
+    }
     private async Task Save()
     {
         var amountResult = MoneyInputParser.ParseOptional(Amount, ItalianCulture);

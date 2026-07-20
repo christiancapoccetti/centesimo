@@ -37,6 +37,18 @@ public partial class ExpenseEditorPage : ContentPage, IQueryAttributable
         await _viewModel.LoadTags();
     }
 
+    private async void OnDeleteClicked(object? sender, EventArgs e)
+    {
+        var confirmed = await DisplayAlertAsync(
+            "Elimina spesa",
+            "Vuoi eliminare questa spesa? L'azione non può essere annullata.",
+            "Elimina",
+            "Annulla");
+        if (!confirmed)
+            return;
+
+        await _viewModel.Delete();
+    }
     private async void OnSaved(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync("..");
 
