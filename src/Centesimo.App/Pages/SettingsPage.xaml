@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Centesimo.App.Pages.SettingsPage"
+             Title="Impostazioni"
+             SafeAreaEdges="All">
+    <ScrollView>
+        <VerticalStackLayout Padding="20,16" Spacing="20">
+            <VerticalStackLayout Spacing="2">
+                <Label Text="Impostazioni"
+                       Style="{StaticResource HeadlineLarge}"
+                       SemanticProperties.HeadingLevel="Level1" />
+                <Label Text="Gestisci i dati locali dell'app."
+                       Style="{StaticResource BodyMedium}" />
+            </VerticalStackLayout>
+            <Border Style="{StaticResource SurfaceCard}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Importa da Money Manager"
+                           Style="{StaticResource TitleLarge}"
+                           SemanticProperties.HeadingLevel="Level2" />
+                    <Label Text="Scegli un backup di Money Manager. Il file non viene inviato: durante l'importazione viene usata solo una copia temporanea locale, poi eliminata. Verranno importate spese, categorie e un tag per spesa."
+                           Style="{StaticResource BodyMedium}" />
+                    <Button Text="Seleziona backup"
+                            Style="{StaticResource PrimaryActionButton}"
+                            IsEnabled="{Binding CanImport}"
+                            Clicked="OnImportClicked"
+                            SemanticProperties.Hint="Apre la selezione di un backup Money Manager" />
+                    <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                       IsVisible="{Binding IsBusy}" />
+                    <Label Text="{Binding Message}"
+                           IsVisible="{Binding HasMessage}"
+                           TextColor="{Binding HasError, Converter={StaticResource ImportMessageColorConverter}}" />
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

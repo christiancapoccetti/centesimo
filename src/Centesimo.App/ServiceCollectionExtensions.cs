@@ -12,6 +12,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<TodayPage>();
         services.AddSingleton<CategoriesViewModel>();
         services.AddSingleton<CategoriesPage>();
+        services.AddSingleton<SettingsViewModel>();
+        services.AddSingleton<SettingsPage>();
         services.AddSingleton<AppShell>();
         services.AddSingleton<Func<AppShell>>(provider =>
             () => provider.GetRequiredService<AppShell>());

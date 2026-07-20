@@ -4,7 +4,7 @@ namespace Centesimo.App;
 
 public partial class AppShell : Shell
 {
-    public AppShell(TodayPage todayPage, CategoriesPage categoriesPage)
+    public AppShell(TodayPage todayPage, CategoriesPage categoriesPage, SettingsPage settingsPage)
     {
         InitializeComponent();
         Routing.RegisterRoute(nameof(ExpenseEditorPage), typeof(ExpenseEditorPage));
@@ -13,7 +13,8 @@ public partial class AppShell : Shell
             Items =
             {
                 CreateTab("Oggi", "TodayPage", "⌂", todayPage),
-                CreateTab("Categorie", "CategoriesPage", "▦", categoriesPage)
+                CreateTab("Categorie", "CategoriesPage", "▦", categoriesPage),
+                CreateTab("Impostazioni", "SettingsPage", "⚙", settingsPage)
             }
         });
     }
