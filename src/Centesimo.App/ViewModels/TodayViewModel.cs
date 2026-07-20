@@ -91,9 +91,10 @@ public sealed class TodayViewModel(TodayOverviewService overviewService) : Obser
     }
 
     public sealed record TodayExpenseItemViewModel(
-        string CategoryName, string Icon, string Color, string Amount, string Note, bool HasNote)
+        Guid ExpenseId, string CategoryName, string Icon, string Color, string Amount, string Note, bool HasNote)
     {
         public static TodayExpenseItemViewModel From(TodayExpenseOverview expense) => new(
+            expense.ExpenseId,
             expense.CategoryName,
             expense.CategoryIcon,
             expense.CategoryColor,

@@ -22,6 +22,13 @@ public partial class TodayPage : ContentPage
     private async void OnExpenseHistoryClicked(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync(nameof(ExpenseHistoryPage));
 
+    private async void OnTodayExpenseTapped(object? sender, TappedEventArgs e)
+    {
+        if (e.Parameter is not TodayViewModel.TodayExpenseItemViewModel expense)
+            return;
+
+        await Shell.Current.GoToAsync($"{nameof(ExpenseEditorPage)}?expenseId={expense.ExpenseId}");
+    }
     private async void OnAddExpenseClicked(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync(nameof(ExpenseEditorPage));
 }

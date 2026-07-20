@@ -3,6 +3,7 @@ namespace Centesimo.Application;
 public static class ApplicationErrors
 {
     public static readonly Error CategoryNotFound = new("Category.NotFound", "La categoria non esiste.");
+    public static readonly Error CategoryNameAlreadyExists = new("Category.NameAlreadyExists", "Esiste già una categoria con questo nome.");
     public static readonly Error CategoryArchived = new("Category.Archived", "La categoria è archiviata.");
     public static readonly Error TagNotFound = new("Tag.NotFound", "Il tag non esiste.");
     public static readonly Error TagArchived = new("Tag.Archived", "Il tag è archiviato.");
