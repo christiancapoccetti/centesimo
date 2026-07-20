@@ -10,7 +10,7 @@ public sealed class CategorySpendingService_should_expected_behavior
         var categories = new FakeCategoryRepository();
         var tags = new FakeTagRepository();
         var expenses = new FakeExpenseRepository();
-        var food = new Category(Guid.NewGuid(), "Food", "cart", "#176B5B");
+        var food = new Category(Guid.NewGuid(), "Food", "cart", "#176B5B", new Money(2000));
         var market = new Tag(Guid.NewGuid(), food.CategoryId, "Market");
         categories.Items.Add(food);
         tags.Items.Add(market);
@@ -26,6 +26,7 @@ public sealed class CategorySpendingService_should_expected_behavior
 
         Assert.True(result.IsSuccess);
         Assert.Equal(2100, result.Value.SpentCents);
+        Assert.Equal(2000, result.Value.BudgetCents);
         Assert.Collection(result.Value.Tags,
             tag =>
             {

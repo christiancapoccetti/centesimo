@@ -26,7 +26,7 @@ public sealed class TodayViewModel(MonthlyOverviewService overviewService) : Obs
     public string BudgetSummary { get => _budgetSummary; private set => SetProperty(ref _budgetSummary, value); }
     public double BudgetProgress { get => _budgetProgress; private set => SetProperty(ref _budgetProgress, value); }
     public string MonthTitle => _selectedMonth == CurrentMonth
-        ? $"Questo mese · {FormatMonth(_selectedMonth)}"
+        ? "Questo mese"
         : FormatMonth(_selectedMonth);
     public string ExpenseSectionTitle => _selectedMonth == CurrentMonth
         ? "Ultime spese"
@@ -135,7 +135,8 @@ public sealed class TodayViewModel(MonthlyOverviewService overviewService) : Obs
         month.ToDateTime(TimeOnly.MinValue).ToString("MMMM yyyy", ItalianCulture);
 
     public sealed record MonthlyCategoryItemViewModel(
-        Guid CategoryId, string Name, string Icon, string Color, string AmountSummary, double Progress)
+        Guid CategoryId, string Name, string Icon, string Color, string AmountSummary, double Progress,
+        bool IsOverBudget, string CardColor, string StatusLabel)
     {
         public static MonthlyCategoryItemViewModel From(MonthlyCategoryOverview category) => new(
             category.CategoryId,
@@ -145,7 +146,14 @@ public sealed class TodayViewModel(MonthlyOverviewService overviewService) : Obs
             category.BudgetCents.HasValue
                 ? $"{FormatMoney(category.SpentCents)} su {FormatMoney(category.BudgetCents.Value)}"
                 : $"{FormatMoney(category.SpentCents)} · Nessun budget",
-            TodayViewModel.Progress(category.SpentCents, category.BudgetCents));
+            TodayViewModel.Progress(category.SpentCents, category.BudgetCents),
+            category.BudgetCents.HasValue && category.SpentCents > category.BudgetCents.Value,
+            category.BudgetCents.HasValue && category.SpentCents > category.BudgetCents.Value
+                ? "#FFE8E6"
+                : "#FFFFFF",
+            category.BudgetCents.HasValue && category.SpentCents > category.BudgetCents.Value
+                ? "Budget superato"
+                : "");
     }
 
     public sealed record MonthlyExpenseItemViewModel(

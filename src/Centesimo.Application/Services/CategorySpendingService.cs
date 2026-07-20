@@ -8,7 +8,8 @@ public sealed record TagSpendingOverview(Guid? TagId, string Name, long SpentCen
     IReadOnlyList<CategoryExpenseOverview> Expenses);
 
 public sealed record CategorySpendingOverview(Guid CategoryId, string CategoryName, string CategoryIcon,
-    string CategoryColor, int Year, int Month, long SpentCents, IReadOnlyList<TagSpendingOverview> Tags);
+    string CategoryColor, int Year, int Month, long SpentCents, long? BudgetCents,
+    IReadOnlyList<TagSpendingOverview> Tags);
 
 public sealed class CategorySpendingService(ICategoryRepository categories, ITagRepository tags,
     IExpenseRepository expenses)
@@ -57,6 +58,7 @@ public sealed class CategorySpendingService(ICategoryRepository categories, ITag
             year,
             month,
             categoryExpenses.Sum(expense => expense.Amount.Cents),
+            category.MonthlyBudget?.Cents,
             spendingByTag));
     }
 

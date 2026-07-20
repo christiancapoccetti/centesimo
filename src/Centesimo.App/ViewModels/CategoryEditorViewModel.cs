@@ -23,16 +23,41 @@ public sealed class CategoryEditorViewModel : ObservableObject
 
     public event EventHandler? Saved;
 
-    public IReadOnlyList<string> Icons { get; } = ["cart", "home", "car", "heart", "more"];
-    public IReadOnlyList<string> Colors { get; } = ["#176B5B", "#8B4A5D", "#725C00", "#4F5F7A", "#6A4F88"];
+    public IReadOnlyList<CategoryIconOption> Icons { get; } =
+    [
+        new("cart"), new("home"), new("car"), new("heart"), new("more"), new("sport"), new("shopping-bag"), new("food"),
+        new("gift"), new("beach"), new("tech"), new("school"), new("family"), new("gym"), new("gear")
+    ];
+    public IReadOnlyList<CategoryColorOption> Colors { get; } =
+    [
+        new("#176B5B"), new("#8B4A5D"), new("#725C00"), new("#4F5F7A"), new("#6A4F88")
+    ];
     public ObservableCollection<CategoryTagItemViewModel> Tags { get; } = [];
     public ICommand SaveCommand { get; }
     public ICommand ClearBudgetCommand { get; }
     public ICommand AddTagCommand { get; }
     public string Title => _categoryId.HasValue ? "Modifica categoria" : "Nuova categoria";
     public string Name { get => _name; set => SetProperty(ref _name, value); }
-    public string SelectedIcon { get => _selectedIcon; set => SetProperty(ref _selectedIcon, value); }
-    public string SelectedColor { get => _selectedColor; set => SetProperty(ref _selectedColor, value); }
+    public string SelectedIcon
+    {
+        get => _selectedIcon;
+        set
+        {
+            SetProperty(ref _selectedIcon, value);
+            foreach (var icon in Icons)
+                icon.IsSelected = icon.Icon == value;
+        }
+    }
+    public string SelectedColor
+    {
+        get => _selectedColor;
+        set
+        {
+            SetProperty(ref _selectedColor, value);
+            foreach (var color in Colors)
+                color.IsSelected = color.Color == value;
+        }
+    }
     public string Budget { get => _budget; set => SetProperty(ref _budget, value); }
     public string NewTagName { get => _newTagName; set => SetProperty(ref _newTagName, value); }
     public string ErrorMessage
@@ -65,8 +90,8 @@ public sealed class CategoryEditorViewModel : ObservableObject
     {
         _categoryId = null;
         Name = "";
-        SelectedIcon = Icons[0];
-        SelectedColor = Colors[0];
+        SelectedIcon = Icons[0].Icon;
+        SelectedColor = Colors[0].Color;
         Budget = "";
         ErrorMessage = "";
         ResetTags();
@@ -200,3 +225,19 @@ public sealed class CategoryEditorViewModel : ObservableObject
 }
 
 public sealed record CategoryTagItemViewModel(Guid TagId, string Name);
+
+public sealed class CategoryIconOption(string icon) : ObservableObject
+{
+    private bool _isSelected;
+
+    public string Icon { get; } = icon;
+    public bool IsSelected { get => _isSelected; set => SetProperty(ref _isSelected, value); }
+}
+
+public sealed class CategoryColorOption(string color) : ObservableObject
+{
+    private bool _isSelected;
+
+    public string Color { get; } = color;
+    public bool IsSelected { get => _isSelected; set => SetProperty(ref _isSelected, value); }
+}
