@@ -32,6 +32,13 @@
                            TextColor="{Binding HasError, Converter={StaticResource ImportMessageColorConverter}}" />
                 </VerticalStackLayout>
             </Border>
+            <Border Style="{StaticResource SurfaceCard}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Pagamenti regolari" Style="{StaticResource TitleLarge}" SemanticProperties.HeadingLevel="Level2" />
+                    <Label Text="Configura le spese automatiche e le relative scadenze." Style="{StaticResource BodyMedium}" />
+                    <Button Text="Gestisci pagamenti" Style="{StaticResource TextActionButton}" Clicked="OnRecurringPaymentsClicked" />
+                </VerticalStackLayout>
+            </Border>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

@@ -14,6 +14,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CategorySpendingService>();
         services.AddScoped<MoneyManagerImportService>();
         services.AddScoped<RecurringPaymentService>();
+        services.AddScoped<UpcomingRecurringPaymentService>();
         return services;
     }
 }

@@ -2,7 +2,7 @@ using Centesimo.Domain;
 
 namespace Centesimo.Application.Tests;
 
-public sealed class RecurringPaymentService_should_expected_behavior
+public sealed partial class RecurringPaymentService_should_expected_behavior
 {
     [Fact]
     public async Task Catch_up_missed_occurrences_and_remain_idempotent()
@@ -55,18 +55,32 @@ public sealed class RecurringPaymentService_should_expected_behavior
         var payments = new FakeRecurringPaymentRepository();
         var service = new RecurringPaymentService(categories, new FakeTagRepository(), expenses,
             payments, new FakeRecurringOccurrenceProcessor(expenses));
-        var created = await service.Create(new(category.CategoryId, 1_000,
-            RecurrenceFrequency.Monthly, new DateOnly(2026, 7, 20)));
+        var created = await service.Create(new(category.CategoryId, 1_000, RecurrenceFrequency.Monthly, new DateOnly(2026, 7, 20)));
         await service.Suspend(created.Value.RecurringPaymentId);
 
         var resumed = await service.Resume(created.Value.RecurringPaymentId);
-        var invalidEnd = await service.End(created.Value.RecurringPaymentId,
-            new DateOnly(2026, 7, 19));
+        var invalidEnd = await service.End(created.Value.RecurringPaymentId, new DateOnly(2026, 7, 19));
 
         Assert.True(resumed.IsSuccess);
         Assert.False(created.Value.IsSuspended);
         Assert.Equal("RecurringPayment.InvalidEndDate", invalidEnd.Error.Code);
-    }}
+    }
 
+    [Fact]
+    public async Task Return_recurring_payments_ordered_by_next_due_date()
+    {
+        var repository = new FakeRecurringPaymentRepository();
+        var categoryId = Guid.NewGuid();
+        repository.Items.Add(new(Guid.NewGuid(), categoryId, new Money(100), RecurrenceFrequency.Monthly,
+            new DateOnly(2026, 9, 1)));
+        repository.Items.Add(new(Guid.NewGuid(), categoryId, new Money(200), RecurrenceFrequency.Weekly,
+            new DateOnly(2026, 8, 1)));
+        var service = new RecurringPaymentService(new FakeCategoryRepository(), new FakeTagRepository(),
+            new FakeExpenseRepository(), repository, new FakeRecurringOccurrenceProcessor(new FakeExpenseRepository()));
 
+        var result = await service.GetAll();
 
+        Assert.True(result.IsSuccess);
+        Assert.Equal(new DateOnly(2026, 8, 1), result.Value[0].NextDueOn);
+    }
+}

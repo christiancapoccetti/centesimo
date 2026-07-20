@@ -9,9 +9,10 @@ Centesimo is a simple, privacy-first Android expense tracker built with .NET MAU
 - Add expenses with an amount, date, category, optional tag, and optional note.
 - Browse monthly expense history, then edit or delete an expense.
 - Review current-month spending and category budget progress from the today dashboard.
+- Configure weekly, monthly, or yearly recurring payments, with optional end dates. Due expenses are created when the app is opened, and upcoming payments generate Android notifications.
 - Store application data locally in SQLite. Centesimo does not require an account or send financial data to a remote service.
 
-Recurring payments, receipt photos, voice control, localization, backups, and additional insights are intentionally deferred. See [FUTURE.md](FUTURE.md) for the current roadmap.
+Receipt photos, voice control, localization, backups, and additional insights are intentionally deferred. See [FUTURE.md](FUTURE.md) for the current roadmap.
 
 ## Architecture
 
