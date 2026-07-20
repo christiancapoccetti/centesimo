@@ -30,6 +30,23 @@ public sealed class CategoryService_should_expected_behavior
         var result = await service.Archive(Guid.NewGuid());
 
         Assert.Equal("Infrastructure.Unexpected", result.Error.Code);
+    }
+    [Fact]
+    public async Task Return_only_active_categories_and_update_details()
+    {
+        var repository = new FakeCategoryRepository();
+        var active = new Category(Guid.NewGuid(), "Food", "cart", "#176B5B");
+        var archived = new Category(Guid.NewGuid(), "Old", "more", "#6A4F88");
+        archived.Archive();
+        repository.Items.AddRange([active, archived]);
+        var service = new CategoryService(repository);
+
+        var updated = await service.Update(active.CategoryId, "Dining", "home", "#8B4A5D", new Money(5000));
+        var categories = await service.GetActive();
+
+        Assert.True(updated.IsSuccess);
+        Assert.Single(categories.Value);
+        Assert.Equal("Dining", categories.Value[0].Name);
     }}
 
 

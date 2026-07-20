@@ -3,9 +3,9 @@ namespace Centesimo.Domain;
 public sealed class Category
 {
     public Guid CategoryId { get; }
-    public string Name { get; }
-    public string Icon { get; }
-    public string Color { get; }
+    public string Name { get; private set; }
+    public string Icon { get; private set; }
+    public string Color { get; private set; }
     public Money? MonthlyBudget { get; private set; }
     public bool IsArchived { get; private set; }
 
@@ -21,6 +21,13 @@ public sealed class Category
         MonthlyBudget = monthlyBudget;
     }
 
+    public void UpdateDetails(string name, string icon, string color, Money? monthlyBudget)
+    {
+        Name = RequireText(name, nameof(name));
+        Icon = RequireText(icon, nameof(icon));
+        Color = RequireText(color, nameof(color));
+        MonthlyBudget = monthlyBudget;
+    }
     public void SetBudget(Money? monthlyBudget) => MonthlyBudget = monthlyBudget;
     public void Archive() => IsArchived = true;
 

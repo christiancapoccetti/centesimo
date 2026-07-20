@@ -26,7 +26,7 @@ public sealed class CategoryRepository(CentesimoDbContext context)
             if (tracked is null)
                 return;
 
-            tracked.SetBudget(category.MonthlyBudget);
+            tracked.UpdateDetails(category.Name, category.Icon, category.Color, category.MonthlyBudget);
             if (category.IsArchived)
                 tracked.Archive();
         }, cancellationToken);

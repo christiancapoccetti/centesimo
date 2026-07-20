@@ -22,7 +22,8 @@ public static class MauiProgram
         var databasePath = Path.Combine(FileSystem.AppDataDirectory, "centesimo.db3");
         builder.Services
             .AddApplicationServices()
-            .AddInfrastructure(databasePath);
+            .AddInfrastructure(databasePath)
+            .AddUi();
 
         var app = builder.Build();
         using var scope = app.Services.CreateScope();

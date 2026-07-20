@@ -2,17 +2,4 @@
 <Shell x:Class="Centesimo.App.AppShell"
        xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-       xmlns:pages="clr-namespace:Centesimo.App.Pages"
-       Title="Centesimo">
-    <TabBar>
-        <ShellContent Title="Oggi"
-                      Route="TodayPage"
-                      ContentTemplate="{DataTemplate pages:TodayPage}" />
-        <ShellContent Title="Categorie"
-                      Route="CategoriesPage"
-                      ContentTemplate="{DataTemplate pages:CategoriesPage}" />
-        <ShellContent Title="Regolari"
-                      Route="RecurringPaymentsPage"
-                      ContentTemplate="{DataTemplate pages:RecurringPaymentsPage}" />
-    </TabBar>
-</Shell>
+       Title="Centesimo" />

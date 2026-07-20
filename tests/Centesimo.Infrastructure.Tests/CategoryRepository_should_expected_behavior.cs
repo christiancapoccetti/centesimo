@@ -28,7 +28,7 @@ public sealed class CategoryRepository_should_expected_behavior
         var category = new Category(Guid.NewGuid(), "Groceries", "cart", "#123456");
         await repository.Add(category);
         database.Context.ChangeTracker.Clear();
-        category.SetBudget(new Money(30_000));
+        category.UpdateDetails("Dining", "home", "#176B5B", new Money(30_000));
         category.Archive();
 
         await repository.Update(category);
@@ -36,6 +36,8 @@ public sealed class CategoryRepository_should_expected_behavior
         var stored = await database.Context.Categories.AsNoTracking().SingleAsync();
 
         Assert.Equal(30_000, stored.MonthlyBudget?.Cents);
+        Assert.Equal("Dining", stored.Name);
+        Assert.Equal("home", stored.Icon);
         Assert.True(stored.IsArchived);
     }
 }
