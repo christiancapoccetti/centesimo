@@ -19,6 +19,11 @@ public partial class ExpenseHistoryPage : ContentPage
         await _viewModel.Load();
     }
 
+    private void OnCardPressed(object? sender, EventArgs e) =>
+        InteractionFeedback.Press(sender);
+
+    private void OnCardReleased(object? sender, EventArgs e) =>
+        InteractionFeedback.Release(sender);
     private async void OnBackClicked(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync("..");
     private async void OnPreviousMonthClicked(object? sender, EventArgs e) =>
@@ -27,9 +32,9 @@ public partial class ExpenseHistoryPage : ContentPage
     private async void OnNextMonthClicked(object? sender, EventArgs e) =>
         await _viewModel.NextMonth();
 
-    private async void OnExpenseTapped(object? sender, TappedEventArgs e)
+    private async void OnExpenseTapped(object? sender, EventArgs e)
     {
-        if (e.Parameter is not ExpenseHistoryViewModel.ExpenseHistoryItemViewModel expense)
+        if (sender is not Button { CommandParameter: ExpenseHistoryViewModel.ExpenseHistoryItemViewModel expense })
             return;
 
         await Shell.Current.GoToAsync($"{nameof(ExpenseEditorPage)}?expenseId={expense.ExpenseId}");
