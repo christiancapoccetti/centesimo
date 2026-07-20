@@ -23,6 +23,10 @@ public sealed class CategoryService(ICategoryRepository categories)
         if (name.IsEmpty())
             return Result<Category>.Failure(ApplicationErrors.InvalidName);
 
+        var availability = await EnsureNameAvailable(name, null, cancellationToken);
+        if (availability.IsFailure)
+            return Result<Category>.Failure(availability.Error);
+
         var category = new Category(Guid.NewGuid(), name, icon, color, budget);
         var saved = await categories.Add(category, cancellationToken);
         return saved.IsFailure
@@ -42,6 +46,10 @@ public sealed class CategoryService(ICategoryRepository categories)
 
         if (found.Value is null)
             return Result.Failure(ApplicationErrors.CategoryNotFound);
+
+        var availability = await EnsureNameAvailable(name, categoryId, cancellationToken);
+        if (availability.IsFailure)
+            return availability;
 
         found.Value.UpdateDetails(name, icon, color, budget);
         return await categories.Update(found.Value, cancellationToken);
@@ -72,4 +80,18 @@ public sealed class CategoryService(ICategoryRepository categories)
         found.Value.Archive();
         return await categories.Update(found.Value, cancellationToken);
     }
-}
+    private async Task<Result> EnsureNameAvailable(string name, Guid? excludedCategoryId,
+        CancellationToken cancellationToken)
+    {
+        var result = await categories.GetAll(cancellationToken);
+        if (result.IsFailure)
+            return Result.Failure(result.Error);
+
+        var normalizedName = name.Trim();
+        var duplicateExists = result.Value.Any(category =>
+            category.CategoryId != excludedCategoryId &&
+            category.Name.Equals(normalizedName, StringComparison.OrdinalIgnoreCase));
+        return duplicateExists
+            ? Result.Failure(ApplicationErrors.CategoryNameAlreadyExists)
+            : Result.Success();
+    }}

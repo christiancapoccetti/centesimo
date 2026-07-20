@@ -3,13 +3,11 @@ namespace Centesimo.App;
 public partial class App : Microsoft.Maui.Controls.Application
 {
     private readonly Func<AppShell> _appShellFactory;
-
     public App(Func<AppShell> appShellFactory)
     {
         InitializeComponent();
+        UserAppTheme = AppTheme.Light;
         _appShellFactory = appShellFactory;
     }
-
-    protected override Window CreateWindow(IActivationState? activationState) =>
-        new(_appShellFactory());
+    protected override Window CreateWindow(IActivationState? activationState) => new(_appShellFactory());
 }

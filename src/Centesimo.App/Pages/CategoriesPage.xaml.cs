@@ -29,6 +29,15 @@ public partial class CategoriesPage : ContentPage
         await Navigation.PushModalAsync(editorPage);
     }
 
+    private async void OnEditTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is not TapGestureRecognizer { CommandParameter: CategoryItemViewModel category })
+            return;
+
+        var editorPage = _serviceProvider.GetRequiredService<CategoryEditorPage>();
+        editorPage.OpenEdit(category);
+        await Navigation.PushModalAsync(editorPage);
+    }
     private async void OnEditClicked(object? sender, EventArgs e)
     {
         if (sender is not Button { CommandParameter: CategoryItemViewModel category })
