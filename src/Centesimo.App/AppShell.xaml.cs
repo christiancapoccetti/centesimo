@@ -8,7 +8,6 @@ public partial class AppShell : Shell
     {
         InitializeComponent();
         Routing.RegisterRoute(nameof(ExpenseEditorPage), typeof(ExpenseEditorPage));
-        Routing.RegisterRoute(nameof(ExpenseHistoryPage), typeof(ExpenseHistoryPage));
         Items.Add(new TabBar
         {
             Items =
