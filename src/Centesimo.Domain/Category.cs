@@ -30,6 +30,7 @@ public sealed class Category
     }
     public void SetBudget(Money? monthlyBudget) => MonthlyBudget = monthlyBudget;
     public void Archive() => IsArchived = true;
+    public void Restore() => IsArchived = false;
 
     private static string RequireText(string value, string parameterName)
     {
