@@ -1,18 +1,17 @@
 using Centesimo.App.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Centesimo.App.Pages;
 
 public partial class CategoriesPage : ContentPage
 {
     private readonly CategoriesViewModel _viewModel;
-    private readonly IServiceProvider _serviceProvider;
+    private readonly CategoryEditorPage _editorPage;
 
-    public CategoriesPage(CategoriesViewModel viewModel, IServiceProvider serviceProvider)
+    public CategoriesPage(CategoriesViewModel viewModel, CategoryEditorPage editorPage)
     {
         InitializeComponent();
         _viewModel = viewModel;
-        _serviceProvider = serviceProvider;
+        _editorPage = editorPage;
         BindingContext = viewModel;
     }
 
@@ -24,29 +23,24 @@ public partial class CategoriesPage : ContentPage
 
     private async void OnNewCategoryClicked(object? sender, EventArgs e)
     {
-        var editorPage = _serviceProvider.GetRequiredService<CategoryEditorPage>();
-        editorPage.OpenNew();
-        await Navigation.PushModalAsync(editorPage);
+        _editorPage.OpenNew();
+        await Navigation.PushModalAsync(_editorPage, false);
     }
 
-    private async void OnEditTapped(object? sender, TappedEventArgs e)
-    {
-        if (sender is not TapGestureRecognizer { CommandParameter: CategoryItemViewModel category })
-            return;
-
-        var editorPage = _serviceProvider.GetRequiredService<CategoryEditorPage>();
-        editorPage.OpenEdit(category);
-        await Navigation.PushModalAsync(editorPage);
-    }
     private async void OnEditClicked(object? sender, EventArgs e)
     {
         if (sender is not Button { CommandParameter: CategoryItemViewModel category })
             return;
 
-        var editorPage = _serviceProvider.GetRequiredService<CategoryEditorPage>();
-        editorPage.OpenEdit(category);
-        await Navigation.PushModalAsync(editorPage);
+        _editorPage.OpenEdit(category);
+        await Navigation.PushModalAsync(_editorPage, false);
     }
+
+    private void OnCardPressed(object? sender, EventArgs e) =>
+        InteractionFeedback.Press(sender);
+
+    private void OnCardReleased(object? sender, EventArgs e) =>
+        InteractionFeedback.Release(sender);
 
     private async void OnArchiveClicked(object? sender, EventArgs e)
     {
