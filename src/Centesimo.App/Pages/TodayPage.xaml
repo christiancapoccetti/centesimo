@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Centesimo.App.Pages.TodayPage"
+             Title="Oggi"
+             SafeAreaEdges="All">
+    <Grid Padding="24" RowDefinitions="*,Auto" RowSpacing="24">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="24">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Oggi"
+                           Style="{StaticResource HeadlineLarge}"
+                           SemanticProperties.HeadingLevel="Level1" />
+                    <Label Text="Tieni sotto controllo le spese di oggi."
+                           Style="{StaticResource BodyMedium}" />
+                </VerticalStackLayout>
+
+                <Border Style="{StaticResource SurfaceCard}">
+                    <VerticalStackLayout Style="{StaticResource EmptyStateLayout}">
+                        <Label Text="Nessuna spesa oggi"
+                               Style="{StaticResource TitleLarge}"
+                               HorizontalTextAlignment="Center"
+                               SemanticProperties.HeadingLevel="Level2" />
+                        <Label Text="Aggiungi la prima spesa per iniziare."
+                               Style="{StaticResource BodyMedium}"
+                               HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Button Grid.Row="1"
+                Text="Aggiungi spesa"
+                Style="{StaticResource PrimaryActionButton}"
+                HorizontalOptions="Fill"
+                SemanticProperties.Hint="Apre l'inserimento di una nuova spesa" />
+    </Grid>
+</ContentPage>

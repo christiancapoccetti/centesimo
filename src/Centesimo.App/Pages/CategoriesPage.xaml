@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Centesimo.App.Pages.CategoriesPage"
+             Title="Categorie"
+             SafeAreaEdges="All">
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="24">
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Categorie"
+                       Style="{StaticResource HeadlineLarge}"
+                       SemanticProperties.HeadingLevel="Level1" />
+                <Label Text="Organizza le spese e assegna un budget mensile."
+                       Style="{StaticResource BodyMedium}" />
+            </VerticalStackLayout>
+
+            <Border Style="{StaticResource SurfaceCard}">
+                <VerticalStackLayout Style="{StaticResource EmptyStateLayout}">
+                    <Label Text="Nessuna categoria"
+                           Style="{StaticResource TitleLarge}"
+                           HorizontalTextAlignment="Center"
+                           SemanticProperties.HeadingLevel="Level2" />
+                    <Label Text="Le categorie e i relativi budget appariranno qui."
+                           Style="{StaticResource BodyMedium}"
+                           HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
