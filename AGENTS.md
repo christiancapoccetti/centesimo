@@ -33,7 +33,7 @@ Shared coding guidelines for Inkee, Teetaly, and Core. Project-local `CLAUDE.md`
 - Repositories return only DTOs (`Inkee.Common.Models`, `Inkee.Sql.Models.Etl`), never EF entities or external-library types.
 - Name resource identifiers `{Resource}Id` (for example, `OrderId`), never `Id{Resource}`.
 - Use the Result Pattern for expected errors instead of exceptions.
-- Register library services inline in `Program.cs`; do not add thin wrappers around library APIs.
+- Prefer project-owned `IServiceCollection` extensions for dependency injection registration. Application entry points should compose these project resolvers and keep only app-specific setup inline.
 - Use TF.Core only in SDK-style projects (`netstandard2.0+` / `net10.0`). Legacy projects must not consume it, and helpers must not be promoted to it without justification.
 
 ## EF Core

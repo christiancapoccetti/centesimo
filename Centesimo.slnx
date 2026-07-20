@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Centesimo.App/Centesimo.App.csproj" />
     <Project Path="src/Centesimo.Application/Centesimo.Application.csproj" />
     <Project Path="src/Centesimo.Domain/Centesimo.Domain.csproj" />
     <Project Path="src/Centesimo.Infrastructure/Centesimo.Infrastructure.csproj" />
