@@ -1,4 +1,4 @@
-﻿using Centesimo.Application;
+using Centesimo.Application;
 using Microsoft.EntityFrameworkCore;
 
 namespace Centesimo.Infrastructure;
@@ -82,7 +82,8 @@ public abstract class RepositoryBase
 
     protected async Task<Result<TValue>> SaveContextInTransaction<TValue>(
         Func<CentesimoDbContext, CancellationToken, Task<TValue>> mutation,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool clearChangeTracker = false)
     {
         try
         {
@@ -105,7 +106,10 @@ public abstract class RepositoryBase
         {
             return Result<TValue>.Failure(InfrastructureErrors.Unexpected);
         }
+        finally
+        {
+            if (clearChangeTracker)
+                Context.ChangeTracker.Clear();
+        }
     }
 }
-
-

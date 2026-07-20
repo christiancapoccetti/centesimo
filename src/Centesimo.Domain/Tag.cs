@@ -21,4 +21,5 @@ public sealed class Tag
     }
 
     public void Archive() => IsArchived = true;
+    public void Restore() => IsArchived = false;
 }
