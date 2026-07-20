@@ -24,16 +24,21 @@ public partial class SettingsPage : ContentPage
             if (file is null)
                 return;
 
+            await using var stream = await file.OpenReadAsync();
+            var preview = await _viewModel.Preview(stream);
+            if (preview.IsFailure)
+                return;
+
             var confirmed = await DisplayAlertAsync(
                 "Importa backup",
-                "Le spese valide del backup verranno aggiunte ai dati esistenti. Vuoi continuare?",
-                "Continua",
+                $"Verranno importate {preview.Value.CategoriesCount} categorie, " +
+                $"{preview.Value.TagsCount} tag e {preview.Value.ExpensesCount} spese. Vuoi continuare?",
+                "Importa",
                 "Annulla");
             if (!confirmed)
                 return;
 
-            await using var stream = await file.OpenReadAsync();
-            await _viewModel.Import(stream);
+            await _viewModel.Import(preview.Value);
         }
         catch (OperationCanceledException)
         {

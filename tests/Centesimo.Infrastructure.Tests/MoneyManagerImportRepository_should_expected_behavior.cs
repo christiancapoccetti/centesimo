@@ -14,7 +14,7 @@ public sealed class MoneyManagerImportRepository_should_expected_behavior
         var data = CreateData();
 
         var first = await repository.Import(data);
-        database.Context.ChangeTracker.Clear();
+        Assert.Empty(database.Context.ChangeTracker.Entries());
         var second = await repository.Import(data);
 
         Assert.True(first.IsSuccess);
@@ -24,6 +24,30 @@ public sealed class MoneyManagerImportRepository_should_expected_behavior
         Assert.Equal(1, await database.Context.Categories.CountAsync());
         Assert.Equal(1, await database.Context.Tags.CountAsync());
         Assert.Equal(1, await database.Context.Expenses.CountAsync());
+    }
+
+    [Fact]
+    public async Task Preview_reports_only_records_that_would_be_added_without_persisting_changes()
+    {
+        using var database = new TestDatabase();
+        var repository = new MoneyManagerImportRepository(database.Context);
+        var data = CreateData();
+
+        var firstPreview = await repository.Preview(data);
+
+        Assert.True(firstPreview.IsSuccess);
+        Assert.Equal(new MoneyManagerPersisted(1, 1, 1), firstPreview.Value);
+        Assert.Empty(database.Context.ChangeTracker.Entries());
+        Assert.Equal(0, await database.Context.Categories.CountAsync());
+        Assert.Equal(0, await database.Context.Tags.CountAsync());
+        Assert.Equal(0, await database.Context.Expenses.CountAsync());
+
+        await repository.Import(data);
+        var secondPreview = await repository.Preview(data);
+
+        Assert.True(secondPreview.IsSuccess);
+        Assert.Equal(new MoneyManagerPersisted(0, 0, 0), secondPreview.Value);
+        Assert.Empty(database.Context.ChangeTracker.Entries());
     }
 
     [Fact]
@@ -41,6 +65,34 @@ public sealed class MoneyManagerImportRepository_should_expected_behavior
         Assert.Equal(0, result.Value.CategoriesAdded);
         Assert.Equal(categoryId, (await database.Context.Expenses.SingleAsync()).CategoryId);
         Assert.Equal(categoryId, (await database.Context.Tags.SingleAsync()).CategoryId);
+    }
+
+    [Fact]
+    public async Task Import_sets_the_source_budget_only_when_the_existing_category_has_no_budget()
+    {
+        using var database = new TestDatabase();
+        var categoryWithoutBudget = new Category(Guid.NewGuid(), "Food", "cart", "#176B5B");
+        var categoryWithBudget = new Category(Guid.NewGuid(), "Travel", "plane", "#176B5B", new Money(5000));
+        database.Context.AddRange(categoryWithoutBudget, categoryWithBudget);
+        await database.Context.SaveChangesAsync();
+        var repository = new MoneyManagerImportRepository(database.Context);
+        var data = new MoneyManagerImportData(
+            [
+                new MoneyManagerCategory("category-1", "Food", "cart", "#176B5B", 25000),
+                new MoneyManagerCategory("category-2", "Travel", "plane", "#176B5B", 30000)
+            ],
+            [],
+            [],
+            0,
+            0);
+
+        var result = await repository.Import(data);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(25000, (await database.Context.Categories.SingleAsync(value =>
+            value.CategoryId == categoryWithoutBudget.CategoryId)).MonthlyBudget?.Cents);
+        Assert.Equal(5000, (await database.Context.Categories.SingleAsync(value =>
+            value.CategoryId == categoryWithBudget.CategoryId)).MonthlyBudget?.Cents);
     }
 
     [Fact]

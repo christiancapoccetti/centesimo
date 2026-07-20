@@ -3,7 +3,8 @@ using System.Text;
 
 namespace Centesimo.Application;
 
-public sealed record MoneyManagerCategory(string SourceUid, string Name, string Icon, string Color);
+public sealed record MoneyManagerCategory(string SourceUid, string Name, string Icon, string Color,
+    long? MonthlyBudgetCents = null);
 public sealed record MoneyManagerTag(string SourceUid, string CategorySourceUid, string Name);
 public sealed record MoneyManagerExpense(string SourceUid, string CategorySourceUid, string? TagSourceUid,
     long AmountCents, DateOnly OccurredOn, string Note);
@@ -14,6 +15,12 @@ public sealed record MoneyManagerPersisted(int CategoriesAdded, int TagsAdded, i
 public sealed record MoneyManagerImportReport(int CategoriesAdded, int TagsAdded, int ExpensesAdded,
     int IgnoredCount, int UncategorizedCount);
 
+public sealed record MoneyManagerImportPreview(MoneyManagerImportData Data, MoneyManagerPersisted Planned)
+{
+    public int CategoriesCount => Planned.CategoriesAdded;
+    public int TagsCount => Planned.TagsAdded;
+    public int ExpensesCount => Planned.ExpensesAdded;
+}
 public interface IMoneyManagerBackupReader
 {
     Task<Result<MoneyManagerImportData>> Read(Stream backup, CancellationToken cancellationToken = default);
@@ -21,32 +28,47 @@ public interface IMoneyManagerBackupReader
 
 public interface IMoneyManagerImportRepository
 {
+    Task<Result<MoneyManagerPersisted>> Preview(MoneyManagerImportData data,
+        CancellationToken cancellationToken = default);
+
     Task<Result<MoneyManagerPersisted>> Import(MoneyManagerImportData data,
         CancellationToken cancellationToken = default);
 }
 
 public sealed class MoneyManagerImportService(IMoneyManagerBackupReader reader, IMoneyManagerImportRepository repository)
 {
-    public async Task<Result<MoneyManagerImportReport>> Import(Stream backup,
+    public async Task<Result<MoneyManagerImportPreview>> Preview(Stream backup,
         CancellationToken cancellationToken = default)
     {
         if (backup is null || !backup.CanRead)
-            return Result<MoneyManagerImportReport>.Failure(MoneyManagerImportErrors.InvalidBackup);
+            return Result<MoneyManagerImportPreview>.Failure(MoneyManagerImportErrors.InvalidBackup);
 
         var read = await reader.Read(backup, cancellationToken);
         if (read.IsFailure)
-            return Result<MoneyManagerImportReport>.Failure(read.Error);
+            return Result<MoneyManagerImportPreview>.Failure(read.Error);
 
-        var persisted = await repository.Import(read.Value, cancellationToken);
+        var planned = await repository.Preview(read.Value, cancellationToken);
+        if (planned.IsFailure)
+            return Result<MoneyManagerImportPreview>.Failure(planned.Error);
+
+        return Result<MoneyManagerImportPreview>.Success(new MoneyManagerImportPreview(read.Value, planned.Value));
+    }
+
+    public async Task<Result<MoneyManagerImportReport>> Import(MoneyManagerImportPreview preview,
+        CancellationToken cancellationToken = default)
+    {
+        if (preview is null)
+            return Result<MoneyManagerImportReport>.Failure(MoneyManagerImportErrors.InvalidBackup);
+
+        var persisted = await repository.Import(preview.Data, cancellationToken);
         if (persisted.IsFailure)
             return Result<MoneyManagerImportReport>.Failure(persisted.Error);
 
         return Result<MoneyManagerImportReport>.Success(new MoneyManagerImportReport(
             persisted.Value.CategoriesAdded, persisted.Value.TagsAdded, persisted.Value.ExpensesAdded,
-            read.Value.IgnoredCount, read.Value.UncategorizedCount));
+            preview.Data.IgnoredCount, preview.Data.UncategorizedCount));
     }
 }
-
 public static class MoneyManagerImportIds
 {
     public static Guid Create(string entityType, string sourceUid)

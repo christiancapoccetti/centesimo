@@ -23,7 +23,39 @@ public sealed class SettingsViewModel(MoneyManagerImportService importService) :
     public bool HasMessage => Message.HasValue();
     public bool HasError { get => _hasError; private set => SetProperty(ref _hasError, value); }
 
-    public async Task Import(Stream backup, CancellationToken cancellationToken = default)
+    public async Task<Result<MoneyManagerImportPreview>> Preview(Stream backup,
+        CancellationToken cancellationToken = default)
+    {
+        if (IsBusy)
+            return Result<MoneyManagerImportPreview>.Failure(MoneyManagerImportErrors.InvalidBackup);
+
+        IsBusy = true;
+        ClearMessage();
+        try
+        {
+            var result = await importService.Preview(backup, cancellationToken);
+            if (result.IsFailure)
+                ShowError(result.Error.Message);
+
+            return result;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            ShowError("Importazione annullata.");
+            throw;
+        }
+        catch
+        {
+            ShowError("Non è stato possibile leggere il backup.");
+            return Result<MoneyManagerImportPreview>.Failure(MoneyManagerImportErrors.InvalidBackup);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    public async Task Import(MoneyManagerImportPreview preview, CancellationToken cancellationToken = default)
     {
         if (IsBusy)
             return;
@@ -32,7 +64,7 @@ public sealed class SettingsViewModel(MoneyManagerImportService importService) :
         ClearMessage();
         try
         {
-            var result = await importService.Import(backup, cancellationToken);
+            var result = await importService.Import(preview, cancellationToken);
             if (result.IsFailure)
             {
                 ShowError(result.Error.Message);
@@ -56,7 +88,6 @@ public sealed class SettingsViewModel(MoneyManagerImportService importService) :
             IsBusy = false;
         }
     }
-
     public void ShowError(string message)
     {
         HasError = true;

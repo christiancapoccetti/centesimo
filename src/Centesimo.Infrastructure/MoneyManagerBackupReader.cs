@@ -152,8 +152,7 @@ public sealed class MoneyManagerBackupReader : IMoneyManagerBackupReader
         var uncategorized = 0;
         foreach (var transaction in transactions.Items)
         {
-            if (!transaction.IsExpense || transaction.IsRemoved || transaction.AmountCents <= 0 ||
-                links.IsRecurring(transaction.Uid))
+            if (!transaction.IsExpense || transaction.IsRemoved || transaction.AmountCents <= 0)
             {
                 ignored++;
                 continue;
@@ -195,7 +194,7 @@ public sealed class MoneyManagerBackupReader : IMoneyManagerBackupReader
     {
         var required = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
         {
-            ["category"] = ["uid", "title", "type", "icon", "color", "isRemoved"],
+            ["category"] = ["uid", "title", "type", "icon", "color", "limitAmount", "isRemoved"],
             ["tag"] = ["uid", "name", "isRemoved"],
             ["transaction"] = ["uid", "type", "amountInDefaultCurrency", "date", "comment", "isRemoved"],
             ["sync_link"] = ["entityType", "entityUid", "otherType", "otherUid", "isRemoved"]
@@ -220,7 +219,7 @@ public sealed class MoneyManagerBackupReader : IMoneyManagerBackupReader
     {
         var result = new Dictionary<string, MoneyManagerCategory>(StringComparer.Ordinal);
         await using var command = connection.CreateCommand();
-        command.CommandText = "SELECT uid,title,icon,color FROM category WHERE isRemoved=0 AND type='Expense' LIMIT 100001";
+        command.CommandText = "SELECT uid,title,icon,color,limitAmount FROM category WHERE isRemoved=0 AND type='Expense' LIMIT 100001";
         await using var reader = await command.ExecuteReaderAsync(token);
         while (await reader.ReadAsync(token))
         {
@@ -232,7 +231,9 @@ public sealed class MoneyManagerBackupReader : IMoneyManagerBackupReader
 
             var icon = ReadText(reader, 2, 100, true) ?? "";
             var color = ReadScalarText(reader, 3, 20);
-            result.TryAdd(uid, new MoneyManagerCategory(uid, name, MapIcon(icon, uid), MapColor(color, uid)));
+            var monthlyBudget = ReadOptionalPositiveInt64(reader, 4);
+            result.TryAdd(uid, new MoneyManagerCategory(uid, name, MapIcon(icon, uid), MapColor(color, uid),
+                monthlyBudget));
         }
 
         return result;
@@ -371,6 +372,14 @@ public sealed class MoneyManagerBackupReader : IMoneyManagerBackupReader
         return true;
     }
 
+    private static long? ReadOptionalPositiveInt64(SqliteDataReader reader, int ordinal)
+    {
+        if (reader.IsDBNull(ordinal))
+            return null;
+        if (!TryReadInt64(reader, ordinal, out var value))
+            throw new MoneyManagerDataException();
+        return value > 0 ? value : null;
+    }
     private static bool TryReadBoolean(SqliteDataReader reader, int ordinal, out bool value)
     {
         value = false;
@@ -418,7 +427,6 @@ public sealed class MoneyManagerBackupReader : IMoneyManagerBackupReader
     {
         private readonly Dictionary<string, string> _categories = new(StringComparer.Ordinal);
         private readonly Dictionary<string, List<string>> _tags = new(StringComparer.Ordinal);
-        private readonly HashSet<string> _recurring = new(StringComparer.Ordinal);
 
         public void Add(string entityType, string entityUid, string otherType, string otherUid)
         {
@@ -437,17 +445,10 @@ public sealed class MoneyManagerBackupReader : IMoneyManagerBackupReader
                     if (values.Count < 100)
                         values.Add(otherUid);
                 }
-                else if (otherType.Contains("recurr", StringComparison.OrdinalIgnoreCase))
-                    _recurring.Add(entityUid);
             }
-
-            if (entityType.Equals("RegularPaymentPeriod", StringComparison.OrdinalIgnoreCase) &&
-                otherType.Equals("Transaction", StringComparison.OrdinalIgnoreCase))
-                _recurring.Add(otherUid);
         }
 
         public string? Category(string transactionUid) => _categories.GetValueOrDefault(transactionUid);
         public IEnumerable<string> Tags(string transactionUid) => _tags.GetValueOrDefault(transactionUid) ?? [];
-        public bool IsRecurring(string transactionUid) => _recurring.Contains(transactionUid);
     }
 }

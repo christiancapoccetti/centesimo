@@ -15,13 +15,17 @@ public sealed class MoneyManagerBackupReader_should_expected_behavior
 
         Assert.True(result.IsSuccess);
         Assert.Single(result.Value.Categories);
+        Assert.Equal(25000, result.Value.Categories[0].MonthlyBudgetCents);
         Assert.Single(result.Value.Tags);
-        var expense = Assert.Single(result.Value.Expenses);
+        Assert.Equal(2, result.Value.Expenses.Count);
+        var expense = Assert.Single(result.Value.Expenses, value => value.SourceUid == "expense-1");
         Assert.Equal(1234, expense.AmountCents);
         Assert.Equal(new DateOnly(2026, 7, 20), expense.OccurredOn);
         Assert.Equal("Lunch", expense.Note);
         Assert.Equal(result.Value.Tags[0].SourceUid, expense.TagSourceUid);
-        Assert.Equal(3, result.Value.IgnoredCount);
+        var regularExpense = Assert.Single(result.Value.Expenses, value => value.SourceUid == "regular-1");
+        Assert.Equal(400, regularExpense.AmountCents);
+        Assert.Equal(2, result.Value.IgnoredCount);
         Assert.Equal(1, result.Value.UncategorizedCount);
     }
 
@@ -134,12 +138,12 @@ public sealed class MoneyManagerBackupReader_should_expected_behavior
     }
 
     private const string SchemaAndData = """
-        CREATE TABLE category (uid TEXT PRIMARY KEY, title TEXT, type TEXT, icon TEXT, color INTEGER, isRemoved INTEGER);
+        CREATE TABLE category (uid TEXT PRIMARY KEY, title TEXT, type TEXT, icon TEXT, color INTEGER, limitAmount INTEGER, isRemoved INTEGER);
         CREATE TABLE tag (uid TEXT PRIMARY KEY, name TEXT, isRemoved INTEGER);
         CREATE TABLE [transaction] (uid TEXT PRIMARY KEY, type TEXT, amountInDefaultCurrency INTEGER, date TEXT, comment TEXT, isRemoved INTEGER);
         CREATE TABLE sync_link (entityType TEXT, entityUid TEXT, otherType TEXT, otherUid TEXT, isRemoved INTEGER);
-        INSERT INTO category VALUES ('expense-category', 'Food', 'Expense', 'food', 1, 0);
-        INSERT INTO category VALUES ('income-category', 'Salary', 'Income', 'money', 2, 0);
+        INSERT INTO category VALUES ('expense-category', 'Food', 'Expense', 'food', 1, 25000, 0);
+        INSERT INTO category VALUES ('income-category', 'Salary', 'Income', 'money', 2, 50000, 0);
         INSERT INTO tag VALUES ('tag-1', 'Restaurant', 0);
         INSERT INTO [transaction] VALUES ('expense-1', 'Expense', 1234, '2026-07-20', 'Lunch', 0);
         INSERT INTO [transaction] VALUES ('income-1', 'Income', 5000, '2026-07-20', '', 0);
