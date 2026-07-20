@@ -28,7 +28,7 @@ public sealed class Category
 
     private static string RequireText(string value, string parameterName)
     {
-        if (string.IsNullOrWhiteSpace(value))
+        if (value.IsEmpty())
         {
             throw new ArgumentException("A value is required.", parameterName);
         }
@@ -36,3 +36,4 @@ public sealed class Category
         return value.Trim();
     }
 }
+

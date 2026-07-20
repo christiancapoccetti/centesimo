@@ -14,7 +14,7 @@ public sealed class Tag
             throw new ArgumentException("Tag and category IDs are required.");
         }
 
-        if (string.IsNullOrWhiteSpace(name))
+        if (name.IsEmpty())
         {
             throw new ArgumentException("Tag name is required.", nameof(name));
         }
@@ -26,3 +26,4 @@ public sealed class Tag
 
     public void Archive() => IsArchived = true;
 }
+
