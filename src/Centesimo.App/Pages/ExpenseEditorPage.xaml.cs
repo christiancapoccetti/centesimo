@@ -29,11 +29,20 @@ public partial class ExpenseEditorPage : ContentPage, IQueryAttributable
         await _viewModel.Load(_expenseId);
     }
 
-    private async void OnCategoryChanged(object? sender, EventArgs e)
+    private async void OnCategoryChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (_viewModel.IsLoading)
             return;
 
+        await _viewModel.LoadTags();
+    }
+
+    private async void OnCategoryTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is not BindableObject { BindingContext: ExpenseEditorViewModel.CategoryOption category })
+            return;
+
+        _viewModel.SelectedCategory = category;
         await _viewModel.LoadTags();
     }
 

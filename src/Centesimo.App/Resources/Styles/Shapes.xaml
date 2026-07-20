@@ -5,4 +5,6 @@
     <x:Double x:Key="ShapeMedium">12</x:Double>
     <x:Double x:Key="ShapeLarge">16</x:Double>
     <x:Double x:Key="ShapeFull">28</x:Double>
+    <x:Double x:Key="ShapeCard">20</x:Double>
+    <x:Double x:Key="ShapeControl">14</x:Double>
 </ResourceDictionary>

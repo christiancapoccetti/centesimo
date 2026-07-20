@@ -18,6 +18,9 @@ public sealed class CategorySpendingViewModel(CategorySpendingService spendingSe
     private string _categoryIcon = "more";
     private string _categoryColor = "#6F7975";
     private string _errorMessage = "";
+    private string _budgetSummary = "Nessun budget impostato";
+    private double _budgetProgress;
+    private bool _isOverBudget;
 
     public Guid CategoryId => _categoryId;
     public int Year => _year;
@@ -29,6 +32,11 @@ public sealed class CategorySpendingViewModel(CategorySpendingService spendingSe
     public string Total { get => _total; private set => SetProperty(ref _total, value); }
     public string CategoryIcon { get => _categoryIcon; private set => SetProperty(ref _categoryIcon, value); }
     public string CategoryColor { get => _categoryColor; private set => SetProperty(ref _categoryColor, value); }
+    public string BudgetSummary { get => _budgetSummary; private set => SetProperty(ref _budgetSummary, value); }
+    public double BudgetProgress { get => _budgetProgress; private set => SetProperty(ref _budgetProgress, value); }
+    public bool IsOverBudget { get => _isOverBudget; private set => SetProperty(ref _isOverBudget, value); }
+    public string BudgetStatus => IsOverBudget ? "Budget superato" : "Budget rispettato";
+    public string BudgetStatusColor => IsOverBudget ? "#BA1A1A" : "#196D61";
     public string ErrorMessage
     {
         get => _errorMessage;
@@ -73,6 +81,11 @@ public sealed class CategorySpendingViewModel(CategorySpendingService spendingSe
         CategoryIcon = overview.CategoryIcon;
         CategoryColor = overview.CategoryColor;
         Total = FormatMoney(overview.SpentCents);
+        BudgetSummary = overview.BudgetCents.HasValue
+            ? $"{FormatMoney(overview.SpentCents)} su {FormatMoney(overview.BudgetCents.Value)} di budget"
+            : "Nessun budget impostato";
+        BudgetProgress = Progress(overview.SpentCents, overview.BudgetCents);
+        IsOverBudget = overview.BudgetCents.HasValue && overview.SpentCents > overview.BudgetCents.Value;
         MonthTitle = new DateOnly(overview.Year, overview.Month, 1)
             .ToDateTime(TimeOnly.MinValue)
             .ToString("MMMM yyyy", ItalianCulture);
@@ -85,9 +98,14 @@ public sealed class CategorySpendingViewModel(CategorySpendingService spendingSe
         OnPropertyChanged(nameof(HasError));
         OnPropertyChanged(nameof(HasTags));
         OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(BudgetStatus));
+        OnPropertyChanged(nameof(BudgetStatusColor));
     }
 
     private static string FormatMoney(long cents) => (cents / 100m).ToString("C", ItalianCulture);
+
+    private static double Progress(long spent, long? budget) =>
+        budget > 0 ? Math.Min((double)spent / budget.Value, 1) : 0;
 
     public sealed record TagSpendingItemViewModel(Guid? TagId, string Name, string Total, string CountText)
     {

@@ -1,94 +1,36 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="Centesimo.App.Pages.CategoryEditorPage"
-             Title="{Binding Title}"
-             Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False" SafeAreaEdges="All">
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="Centesimo.App.Pages.CategoryEditorPage" Title="{Binding Title}" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False" SafeAreaEdges="All">
     <Grid Padding="20" RowDefinitions="*,Auto" RowSpacing="16">
-        <ScrollView Grid.Row="0">
+        <ScrollView>
             <VerticalStackLayout Spacing="16">
-                <Label Text="{Binding Title}"
-                       Style="{StaticResource HeadlineLarge}"
-                       SemanticProperties.HeadingLevel="Level1" />
-                <Entry Text="{Binding Name}"
-                       Placeholder="Nome"
-                       MinimumHeightRequest="48"
-                       SemanticProperties.Description="Nome della categoria" />
-                <VerticalStackLayout Spacing="8"><Label Text="Icona" Style="{StaticResource LabelLarge}"/><CollectionView ItemsSource="{Binding Icons}" SelectedItem="{Binding SelectedIcon}" SelectionMode="Single" HeightRequest="60" HorizontalScrollBarVisibility="Never"><CollectionView.ItemsLayout><LinearItemsLayout Orientation="Horizontal" ItemSpacing="8"/></CollectionView.ItemsLayout><CollectionView.ItemTemplate><DataTemplate><Border WidthRequest="52" HeightRequest="52" BackgroundColor="White" Stroke="{StaticResource OutlineLight}" StrokeThickness="1" StrokeShape="RoundRectangle 16" SemanticProperties.Description="{Binding ., Converter={StaticResource CategoryIconConverter}, ConverterParameter=Name}"><VisualStateManager.VisualStateGroups><VisualStateGroup Name="CommonStates"><VisualState Name="Normal"/><VisualState Name="Selected"><VisualState.Setters><Setter Property="Stroke" Value="{StaticResource PrimaryLight}"/><Setter Property="StrokeThickness" Value="3"/><Setter Property="BackgroundColor" Value="{StaticResource PrimaryContainerLight}"/></VisualState.Setters></VisualState></VisualStateGroup></VisualStateManager.VisualStateGroups><Label Text="{Binding ., Converter={StaticResource CategoryIconConverter}}" FontSize="22" TextColor="{StaticResource PrimaryLight}" HorizontalOptions="Center" VerticalOptions="Center"/></Border></DataTemplate></CollectionView.ItemTemplate></CollectionView></VerticalStackLayout>
-                <VerticalStackLayout Spacing="8"><Label Text="Colore" Style="{StaticResource LabelLarge}"/><CollectionView ItemsSource="{Binding Colors}" SelectedItem="{Binding SelectedColor}" SelectionMode="Single" HeightRequest="60" HorizontalScrollBarVisibility="Never"><CollectionView.ItemsLayout><LinearItemsLayout Orientation="Horizontal" ItemSpacing="8"/></CollectionView.ItemsLayout><CollectionView.ItemTemplate><DataTemplate><Border WidthRequest="52" HeightRequest="52" BackgroundColor="Transparent" Stroke="Transparent" StrokeThickness="3" StrokeShape="RoundRectangle 17" SemanticProperties.Description="{Binding ., Converter={StaticResource CategoryColorNameConverter}}"><VisualStateManager.VisualStateGroups><VisualStateGroup Name="CommonStates"><VisualState Name="Normal"/><VisualState Name="Selected"><VisualState.Setters><Setter Property="Stroke" Value="{StaticResource PrimaryLight}"/><Setter Property="StrokeThickness" Value="3"/><Setter Property="BackgroundColor" Value="Transparent"/></VisualState.Setters></VisualState></VisualStateGroup></VisualStateManager.VisualStateGroups><Border Margin="4" BackgroundColor="{Binding .}" Stroke="White" StrokeThickness="2" StrokeShape="RoundRectangle 12"/></Border></DataTemplate></CollectionView.ItemTemplate></CollectionView></VerticalStackLayout>
-                <Entry Text="{Binding Budget}"
-                       Placeholder="Budget mensile opzionale"
-                       Keyboard="Numeric"
-                       MinimumHeightRequest="48"
-                       SemanticProperties.Description="Budget mensile in euro" />
-
-                <BoxView HeightRequest="1"
-                         Margin="0,8"
-                         Color="{StaticResource OutlineLight}" />
-
+                <Label Text="{Binding Title}" Style="{StaticResource HeadlineLarge}" SemanticProperties.HeadingLevel="Level1" />
+                <Entry Text="{Binding Name}" Placeholder="Nome" MinimumHeightRequest="48" SemanticProperties.Description="Nome della categoria" />
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Icona" Style="{StaticResource LabelLarge}" />
+                    <CollectionView ItemsSource="{Binding Icons}" SelectionMode="None" HeightRequest="180" VerticalScrollBarVisibility="Never">
+                        <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="5" HorizontalItemSpacing="8" VerticalItemSpacing="8" /></CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate><DataTemplate><Border WidthRequest="52" HeightRequest="52" BackgroundColor="{StaticResource PrimaryLight}" Stroke="{StaticResource OutlineLight}" StrokeThickness="1" StrokeShape="RoundRectangle 16" SemanticProperties.Description="{Binding Icon, Converter={StaticResource CategoryIconConverter}}"><Border.GestureRecognizers><TapGestureRecognizer Tapped="OnIconTapped" /></Border.GestureRecognizers><Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True"><Setter Property="BackgroundColor" Value="{StaticResource PrimaryDark}" /><Setter Property="Stroke" Value="{StaticResource SecondaryLight}" /><Setter Property="StrokeThickness" Value="3" /></DataTrigger></Border.Triggers><Image Source="{Binding Icon, Converter={StaticResource CategoryIconSourceConverter}}" Style="{StaticResource CategoryIconImage}" /></Border></DataTemplate></CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+                <Entry Text="{Binding Budget}" Placeholder="Budget mensile opzionale" Keyboard="Numeric" MinimumHeightRequest="48" SemanticProperties.Description="Budget mensile in euro" />
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Colore" Style="{StaticResource LabelLarge}" />
+                    <CollectionView ItemsSource="{Binding Colors}" SelectionMode="None" HeightRequest="60" HorizontalScrollBarVisibility="Never"><CollectionView.ItemsLayout><LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" /></CollectionView.ItemsLayout><CollectionView.ItemTemplate><DataTemplate><Border WidthRequest="52" HeightRequest="52" BackgroundColor="Transparent" Stroke="Transparent" StrokeThickness="3" StrokeShape="RoundRectangle 17" SemanticProperties.Description="{Binding Color, Converter={StaticResource CategoryColorNameConverter}}"><Border.GestureRecognizers><TapGestureRecognizer Tapped="OnColorTapped" /></Border.GestureRecognizers><Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True"><Setter Property="Stroke" Value="{StaticResource PrimaryLight}" /><Setter Property="StrokeThickness" Value="3" /></DataTrigger></Border.Triggers><Border Margin="4" BackgroundColor="{Binding Color}" Stroke="White" StrokeThickness="2" StrokeShape="RoundRectangle 12" /></Border></DataTemplate></CollectionView.ItemTemplate></CollectionView>
+                </VerticalStackLayout>
+                <BoxView HeightRequest="1" Margin="0,8" Color="{StaticResource OutlineLight}" />
                 <VerticalStackLayout Spacing="12">
-                    <Label Text="Tag"
-                           Style="{StaticResource TitleLarge}"
-                           SemanticProperties.HeadingLevel="Level2" />
-                    <Label Text="Salva prima la categoria per aggiungere tag."
-                           Style="{StaticResource BodyMedium}"
-                           IsVisible="{Binding CannotManageTags}" />
-                    <VerticalStackLayout IsVisible="{Binding CanManageTags}"
-                                         Spacing="12">
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                            <Entry Text="{Binding NewTagName}"
-                                   Placeholder="Nuovo tag"
-                                   MinimumHeightRequest="48"
-                                   ReturnType="Done"
-                                   ReturnCommand="{Binding AddTagCommand}" />
-                            <Button Grid.Column="1"
-                                    Text="Aggiungi"
-                                    Command="{Binding AddTagCommand}"
-                                    MinimumHeightRequest="48" />
-                        </Grid>
-                        <ActivityIndicator IsRunning="{Binding IsTagBusy}"
-                                           IsVisible="{Binding IsTagBusy}" />
-                        <Label Text="Nessun tag in questa categoria."
-                               Style="{StaticResource BodyMedium}"
-                               IsVisible="{Binding IsTagEmpty}" />
-                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Tags}"
-                                             Spacing="8">
-                            <BindableLayout.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Style="{StaticResource SurfaceCard}"
-                                            Padding="12">
-                                        <Grid ColumnDefinitions="*,48" ColumnSpacing="8">
-                                            <Label Text="{Binding Name}"
-                                                   VerticalOptions="Center"
-                                                   Style="{StaticResource TitleMedium}" />
-                                            <Button Grid.Column="1"
-                                                    Text="×" Style="{StaticResource IconButton}"
-                                                    FontSize="22"
-                                                    MinimumHeightRequest="48"
-                                                    MinimumWidthRequest="48"
-                                                    CommandParameter="{Binding .}"
-                                                    Clicked="OnArchiveTagClicked"
-                                                    SemanticProperties.Description="Rimuovi tag" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </BindableLayout.ItemTemplate>
-                        </VerticalStackLayout>
+                    <Label Text="Tag" Style="{StaticResource TitleLarge}" SemanticProperties.HeadingLevel="Level2" />
+                    <Label Text="Salva prima la categoria per aggiungere tag." Style="{StaticResource BodyMedium}" IsVisible="{Binding CannotManageTags}" />
+                    <VerticalStackLayout IsVisible="{Binding CanManageTags}" Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"><Entry Text="{Binding NewTagName}" Placeholder="Nuovo tag" MinimumHeightRequest="48" ReturnType="Done" ReturnCommand="{Binding AddTagCommand}" /><Button Grid.Column="1" Text="Aggiungi" Command="{Binding AddTagCommand}" MinimumHeightRequest="48" /></Grid>
+                        <ActivityIndicator IsRunning="{Binding IsTagBusy}" IsVisible="{Binding IsTagBusy}" />
+                        <Label Text="Nessun tag in questa categoria." Style="{StaticResource BodyMedium}" IsVisible="{Binding IsTagEmpty}" />
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Tags}" Spacing="8"><BindableLayout.ItemTemplate><DataTemplate><Border Style="{StaticResource SurfaceCard}" Padding="12"><Grid ColumnDefinitions="*,48" ColumnSpacing="8"><Label Text="{Binding Name}" VerticalOptions="Center" Style="{StaticResource TitleMedium}" /><Button Grid.Column="1" Text="×" Style="{StaticResource IconButton}" FontSize="22" MinimumHeightRequest="48" MinimumWidthRequest="48" CommandParameter="{Binding .}" Clicked="OnArchiveTagClicked" SemanticProperties.Description="Rimuovi tag" /></Grid></Border></DataTemplate></BindableLayout.ItemTemplate></VerticalStackLayout>
                     </VerticalStackLayout>
                 </VerticalStackLayout>
-
-                <Label Text="{Binding ErrorMessage}"
-                       IsVisible="{Binding HasError}"
-                       TextColor="#BA1A1A"
-                       Style="{StaticResource BodyMedium}" />
+                <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" TextColor="#BA1A1A" Style="{StaticResource BodyMedium}" />
             </VerticalStackLayout>
         </ScrollView>
-        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12">
-            <Button Text="Annulla" Style="{StaticResource TextActionButton}" BorderColor="{StaticResource OutlineLight}" BorderWidth="1" CornerRadius="20" MinimumHeightRequest="48" Clicked="OnCancelClicked" />
-            <Button Grid.Column="1"
-                    Text="Salva"
-                    Style="{StaticResource PrimaryActionButton}"
-                    Command="{Binding SaveCommand}" />
-        </Grid>
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12"><Button Text="Annulla" Style="{StaticResource TextActionButton}" BorderColor="{StaticResource OutlineLight}" BorderWidth="1" CornerRadius="20" MinimumHeightRequest="48" Clicked="OnCancelClicked" /><Button Grid.Column="1" Text="Salva" Style="{StaticResource PrimaryActionButton}" Command="{Binding SaveCommand}" /></Grid>
     </Grid>
 </ContentPage>

@@ -29,7 +29,16 @@ public sealed class ExpenseEditorViewModel : ObservableObject
     public ICommand SaveCommand { get; }
     public string Title => _expenseId.HasValue ? "Modifica spesa" : "Nuova spesa";
     public string Amount { get => _amount; set => SetProperty(ref _amount, value); }
-    public CategoryOption? SelectedCategory { get => _selectedCategory; set => SetProperty(ref _selectedCategory, value); }
+    public CategoryOption? SelectedCategory
+    {
+        get => _selectedCategory;
+        set
+        {
+            SetProperty(ref _selectedCategory, value);
+            foreach (var category in Categories)
+                category.IsSelected = category == value;
+        }
+    }
     public TagOption? SelectedTag { get => _selectedTag; set => SetProperty(ref _selectedTag, value); }
     public DateTime OccurredOn { get => _occurredOn; set => SetProperty(ref _occurredOn, value); }
     public string Note { get => _note; set => SetProperty(ref _note, value); }
@@ -71,7 +80,7 @@ public sealed class ExpenseEditorViewModel : ObservableObject
             ErrorMessage = result.Error.Message;
         else
             foreach (var category in result.Value)
-                Categories.Add(new CategoryOption(category.CategoryId, category.Name));
+                Categories.Add(new CategoryOption(category.CategoryId, category.Name, category.Icon, category.Color));
 
         if (_expenseId.HasValue && !HasError)
             await LoadExpense(_expenseId.Value);
@@ -203,6 +212,15 @@ public sealed class ExpenseEditorViewModel : ObservableObject
         OnPropertyChanged(nameof(HasTags));
     }
 
-    public sealed record CategoryOption(Guid CategoryId, string Name);
+    public sealed class CategoryOption(Guid categoryId, string name, string icon, string color) : ObservableObject
+    {
+        private bool _isSelected;
+
+        public Guid CategoryId { get; } = categoryId;
+        public string Name { get; } = name;
+        public string Icon { get; } = icon;
+        public string Color { get; } = color;
+        public bool IsSelected { get => _isSelected; set => SetProperty(ref _isSelected, value); }
+    }
     public sealed record TagOption(Guid TagId, string Name);
 }

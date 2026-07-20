@@ -1,85 +1,17 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    x:Class="Centesimo.App.Pages.TodayPage"
-    Title="Oggi"
-    SafeAreaEdges="All">
-    <Grid Padding="20,16" RowDefinitions="*,Auto" RowSpacing="12">
-        <CollectionView ItemsSource="{Binding Expenses}" ItemSizingStrategy="MeasureFirstItem" SelectionMode="None">
-            <CollectionView.Header>
-                <VerticalStackLayout Spacing="20" Padding="0,0,0,8">
-                    <VerticalStackLayout Spacing="2">
-                        <Label Text="Buongiorno" Style="{StaticResource HeadlineLarge}" SemanticProperties.HeadingLevel="Level1" />
-                        <Label Text="Il tuo andamento mese per mese" Style="{StaticResource BodyMedium}" />
-                    </VerticalStackLayout>
-                    <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" MinimumHeightRequest="48" />
-                    <Border Style="{StaticResource SurfaceCard}" IsVisible="{Binding HasError}">
-                        <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource ErrorLight}" />
-                    </Border>
-                    <Border Style="{StaticResource TonalCard}">
-                        <VerticalStackLayout Spacing="10">
-                            <Grid ColumnDefinitions="48,*,48">
-                                <Button Text="&#x2039;" Style="{StaticResource IconButton}" IsEnabled="{Binding CanGoPrevious}" Clicked="OnPreviousMonthClicked" SemanticProperties.Description="Mese precedente" />
-                                <Label Grid.Column="1" Text="{Binding MonthTitle}" Style="{StaticResource TitleMedium}" HorizontalOptions="Center" VerticalOptions="Center" />
-                                <Button Grid.Column="2" Text="&#x203A;" Style="{StaticResource IconButton}" IsEnabled="{Binding CanGoNext}" Clicked="OnNextMonthClicked" SemanticProperties.Description="Mese successivo" />
-                            </Grid>
-                            <Label Text="SPESO NEL MESE" Style="{StaticResource LabelLarge}" TextColor="{StaticResource OnPrimaryContainerLight}" />
-                            <Label Text="{Binding MonthlyTotal}" Style="{StaticResource DisplaySmall}" TextColor="{StaticResource OnPrimaryContainerLight}" />
-                            <Label Text="{Binding BudgetSummary}" Style="{StaticResource BodyMedium}" />
-                            <ProgressBar Progress="{Binding BudgetProgress}" HeightRequest="8" ProgressColor="{StaticResource PrimaryLight}" />
-                        </VerticalStackLayout>
-                    </Border>
-                    <VerticalStackLayout Spacing="10" IsVisible="{Binding HasCategories}">
-                        <Label Text="Categorie" Style="{StaticResource TitleLarge}" SemanticProperties.HeadingLevel="Level2" />
-                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Categories}" Spacing="8">
-                            <BindableLayout.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Style="{StaticResource SurfaceCard}" Padding="14">
-                                        <Grid ColumnDefinitions="44,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
-                                            <Border Grid.RowSpan="2" HeightRequest="44" WidthRequest="44" BackgroundColor="{Binding Color}" StrokeThickness="0" StrokeShape="RoundRectangle 14">
-                                                <Label Text="{Binding Icon, Converter={StaticResource CategoryIconConverter}}" TextColor="White" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
-                                            </Border>
-                                            <Label Grid.Column="1" Text="{Binding Name}" Style="{StaticResource TitleMedium}" />
-                                            <Label Grid.Column="2" Text="{Binding AmountSummary}" Style="{StaticResource BodyMedium}" />
-                                            <ProgressBar Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Progress="{Binding Progress}" HeightRequest="5" ProgressColor="{StaticResource PrimaryLight}" />
-                                            <Button Grid.RowSpan="2" Grid.ColumnSpan="3" ZIndex="2" BackgroundColor="Transparent" Text="" Pressed="OnCardPressed" Released="OnCardReleased" Clicked="OnCategoryClicked" CommandParameter="{Binding .}" SemanticProperties.Description="Apri dettaglio categoria" SemanticProperties.Hint="Mostra le spese divise per tag" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </BindableLayout.ItemTemplate>
-                        </VerticalStackLayout>
-                    </VerticalStackLayout>
-                    <VerticalStackLayout Spacing="10">
-                        <Label Text="{Binding ExpenseSectionTitle}" Style="{StaticResource TitleLarge}" SemanticProperties.HeadingLevel="Level2" />
-                        <Border Style="{StaticResource SurfaceCard}" IsVisible="{Binding IsExpenseEmpty}">
-                            <Label Text="{Binding EmptyMessage}" Style="{StaticResource BodyMedium}" HorizontalTextAlignment="Center" />
-                        </Border>
-                    </VerticalStackLayout>
-                </VerticalStackLayout>
-            </CollectionView.Header>
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <Border Style="{StaticResource SurfaceCard}" Padding="14" Margin="0,0,0,8" SemanticProperties.Hint="Tocca per modificare la spesa">
-                        <Grid ColumnDefinitions="44,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
-                            <Border Grid.RowSpan="2" HeightRequest="44" WidthRequest="44" BackgroundColor="{Binding Color}" StrokeThickness="0" StrokeShape="RoundRectangle 14">
-                                <Label Text="{Binding Icon, Converter={StaticResource CategoryIconConverter}}" TextColor="White" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
-                            </Border>
-                            <Label Grid.Column="1" Text="{Binding CategoryName}" Style="{StaticResource TitleMedium}" />
-                            <Label Grid.Column="2" Text="{Binding Amount}" Style="{StaticResource TitleMedium}" />
-                            <HorizontalStackLayout Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Spacing="8">
-                                <Label Text="{Binding Date}" Style="{StaticResource BodyMedium}" />
-                                <Label Text="{Binding Note}" IsVisible="{Binding HasNote}" Style="{StaticResource BodyMedium}" />
-                            </HorizontalStackLayout>
-                            <Button Grid.RowSpan="2" Grid.ColumnSpan="3" ZIndex="2" BackgroundColor="Transparent" Text="" Pressed="OnCardPressed" Released="OnCardReleased" Clicked="OnExpenseClicked" CommandParameter="{Binding .}" SemanticProperties.Hint="Tocca per modificare la spesa" />
-                        </Grid>
-                    </Border>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-            <CollectionView.Footer>
-                <BoxView HeightRequest="4" Color="Transparent" />
-            </CollectionView.Footer>
-        </CollectionView>
-        <Button Grid.Row="1" Text="&#xFF0B;  Aggiungi spesa" Clicked="OnAddExpenseClicked" Style="{StaticResource PrimaryActionButton}" HorizontalOptions="Fill" SemanticProperties.Hint="Apre l'inserimento di una nuova spesa" />
-    </Grid>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="Centesimo.App.Pages.TodayPage" Title="Oggi" SafeAreaEdges="All">
+ <Grid Padding="22,14,22,16" RowDefinitions="*,56" RowSpacing="12">
+  <CollectionView ItemsSource="{Binding Expenses}" SelectionMode="None" ItemSizingStrategy="MeasureFirstItem">
+   <CollectionView.Header><VerticalStackLayout Spacing="24" Padding="0,8,0,14">
+    <Grid ColumnDefinitions="*,Auto"><VerticalStackLayout Spacing="2"><Label Text="Ciao!" Style="{StaticResource HeadlineLarge}" /><Label Text="Ecco come sta andando il tuo mese." Style="{StaticResource BodyMedium}" /></VerticalStackLayout><Border Grid.Column="1" Style="{StaticResource CategoryIconContainer}" BackgroundColor="{StaticResource PrimaryContainerLight}" VerticalOptions="Center"><Label Text="€" Style="{StaticResource TitleLarge}" TextColor="{StaticResource PrimaryLight}" HorizontalOptions="Center" VerticalOptions="Center" /></Border></Grid>
+    <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" />
+    <Border Style="{StaticResource SurfaceCard}" IsVisible="{Binding HasError}"><Label Text="{Binding ErrorMessage}" TextColor="{StaticResource ErrorLight}" /></Border>
+    <VerticalStackLayout Spacing="12"><Grid ColumnDefinitions="40,*,40"><Button Text="‹" Style="{StaticResource IconButton}" IsEnabled="{Binding CanGoPrevious}" Clicked="OnPreviousMonthClicked" /><Label Grid.Column="1" Text="{Binding MonthTitle}" Style="{StaticResource TitleMedium}" HorizontalTextAlignment="Center" VerticalOptions="Center" /><Button Grid.Column="2" Text="›" Style="{StaticResource IconButton}" IsEnabled="{Binding CanGoNext}" Clicked="OnNextMonthClicked" /></Grid><Border Style="{StaticResource TonalCard}" Padding="22"><VerticalStackLayout Spacing="8"><Label Text="QUESTO MESE" Style="{StaticResource LabelLarge}" TextColor="{StaticResource OnPrimaryContainerLight}" /><Label Text="{Binding MonthlyTotal}" Style="{StaticResource DisplaySmall}" TextColor="{StaticResource OnPrimaryContainerLight}" /><Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0"><Label Text="{Binding BudgetSummary}" Style="{StaticResource BodyMedium}" /><Label Grid.Column="1" Text="Budget" Style="{StaticResource LabelLarge}" /></Grid><ProgressBar Progress="{Binding BudgetProgress}" HeightRequest="6" ProgressColor="{StaticResource PrimaryLight}" /></VerticalStackLayout></Border></VerticalStackLayout>
+    <VerticalStackLayout Spacing="12" IsVisible="{Binding HasCategories}"><Grid ColumnDefinitions="*,Auto"><Label Text="Panoramica" Style="{StaticResource TitleLarge}" /><Label Grid.Column="1" Text="Per categoria" Style="{StaticResource BodyMedium}" /></Grid><ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never"><HorizontalStackLayout BindableLayout.ItemsSource="{Binding Categories}" Spacing="10"><BindableLayout.ItemTemplate><DataTemplate><Border Style="{StaticResource SurfaceCard}" BackgroundColor="{Binding CardColor}" Padding="12" WidthRequest="168" HeightRequest="92"><Grid ColumnDefinitions="44,*" ColumnSpacing="10"><Border Style="{StaticResource CategoryIconContainer}" BackgroundColor="{Binding Color}"><Image Source="{Binding Icon, Converter={StaticResource CategoryIconSourceConverter}}" Style="{StaticResource CategoryIconImage}" /></Border><VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center"><Label Text="{Binding Name}" Style="{StaticResource TitleMedium}" MaxLines="1" LineBreakMode="TailTruncation" /><Label Text="{Binding AmountSummary}" Style="{StaticResource BodyMedium}" MaxLines="1" LineBreakMode="TailTruncation" /><Label Text="{Binding StatusLabel}" IsVisible="{Binding IsOverBudget}" TextColor="{StaticResource ErrorLight}" Style="{StaticResource LabelLarge}" /></VerticalStackLayout><Button Grid.ColumnSpan="2" BackgroundColor="Transparent" Text="" Clicked="OnCategoryClicked" CommandParameter="{Binding .}" /></Grid></Border></DataTemplate></BindableLayout.ItemTemplate></HorizontalStackLayout></ScrollView></VerticalStackLayout>
+    <VerticalStackLayout Spacing="10"><Label Text="{Binding ExpenseSectionTitle}" Style="{StaticResource TitleLarge}" /><Label Text="{Binding EmptyMessage}" IsVisible="{Binding IsExpenseEmpty}" Style="{StaticResource BodyMedium}" /></VerticalStackLayout>
+   </VerticalStackLayout></CollectionView.Header>
+   <CollectionView.ItemTemplate><DataTemplate><Grid ColumnDefinitions="48,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" Padding="0,10"><Border Grid.RowSpan="2" Style="{StaticResource CategoryIconContainer}" BackgroundColor="{Binding Color}"><Image Source="{Binding Icon, Converter={StaticResource CategoryIconSourceConverter}}" Style="{StaticResource CategoryIconImage}" /></Border><Label Grid.Column="1" Text="{Binding CategoryName}" Style="{StaticResource TitleMedium}" /><Label Grid.Column="2" Text="{Binding Amount}" Style="{StaticResource TitleMedium}" /><HorizontalStackLayout Grid.Row="1" Grid.Column="1" Spacing="6"><Label Text="{Binding Date}" Style="{StaticResource BodyMedium}" /><Label Text="{Binding Note}" IsVisible="{Binding HasNote}" Style="{StaticResource BodyMedium}" LineBreakMode="TailTruncation" /></HorizontalStackLayout><Button Grid.RowSpan="2" Grid.ColumnSpan="3" BackgroundColor="Transparent" Text="" Clicked="OnExpenseClicked" CommandParameter="{Binding .}" /></Grid></DataTemplate></CollectionView.ItemTemplate>
+  </CollectionView>
+  <Button Grid.Row="1" Text="＋  Aggiungi spesa" Clicked="OnAddExpenseClicked" Style="{StaticResource PrimaryActionButton}" HeightRequest="56" MinimumHeightRequest="56" MaximumHeightRequest="56" />
+ </Grid>
 </ContentPage>

@@ -24,6 +24,18 @@ public partial class CategoryEditorPage : ContentPage
         await _viewModel.LoadTags();
     }
 
+    private void OnIconTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is BindableObject { BindingContext: CategoryIconOption icon })
+            _viewModel.SelectedIcon = icon.Icon;
+    }
+
+    private void OnColorTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is BindableObject { BindingContext: CategoryColorOption color })
+            _viewModel.SelectedColor = color.Color;
+    }
+
     private async void OnArchiveTagClicked(object? sender, EventArgs e)
     {
         if (sender is not Button { CommandParameter: CategoryTagItemViewModel tag })
