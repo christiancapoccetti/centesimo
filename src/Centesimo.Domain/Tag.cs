@@ -10,14 +10,10 @@ public sealed class Tag
     public Tag(Guid tagId, Guid categoryId, string name)
     {
         if (tagId == Guid.Empty || categoryId == Guid.Empty)
-        {
             throw new ArgumentException("Tag and category IDs are required.");
-        }
 
         if (name.IsEmpty())
-        {
             throw new ArgumentException("Tag name is required.", nameof(name));
-        }
 
         TagId = tagId;
         CategoryId = categoryId;
@@ -26,4 +22,3 @@ public sealed class Tag
 
     public void Archive() => IsArchived = true;
 }
-

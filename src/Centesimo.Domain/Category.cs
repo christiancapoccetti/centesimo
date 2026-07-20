@@ -12,9 +12,7 @@ public sealed class Category
     public Category(Guid categoryId, string name, string icon, string color, Money? monthlyBudget = null)
     {
         if (categoryId == Guid.Empty)
-        {
             throw new ArgumentException("Category ID is required.", nameof(categoryId));
-        }
 
         CategoryId = categoryId;
         Name = RequireText(name, nameof(name));
@@ -29,11 +27,8 @@ public sealed class Category
     private static string RequireText(string value, string parameterName)
     {
         if (value.IsEmpty())
-        {
             throw new ArgumentException("A value is required.", parameterName);
-        }
 
         return value.Trim();
     }
 }
-

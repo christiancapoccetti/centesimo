@@ -4,8 +4,8 @@ namespace Centesimo.Application;
 
 public interface ICategoryRepository
 {
-    Task Add(Category category, CancellationToken cancellationToken = default);
-    Task<Category?> Get(Guid categoryId, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<Category>> GetAll(CancellationToken cancellationToken = default);
-    Task Update(Category category, CancellationToken cancellationToken = default);
+    Task<Result> Add(Category category, CancellationToken cancellationToken = default);
+    Task<Result<Category?>> Get(Guid categoryId, CancellationToken cancellationToken = default);
+    Task<Result<IReadOnlyList<Category>>> GetAll(CancellationToken cancellationToken = default);
+    Task<Result> Update(Category category, CancellationToken cancellationToken = default);
 }

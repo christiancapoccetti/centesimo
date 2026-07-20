@@ -4,38 +4,29 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Centesimo.Infrastructure;
 
-public sealed class TagRepository(CentesimoDbContext dbContext) : ITagRepository
+public sealed class TagRepository(CentesimoDbContext context)
+    : RepositoryBase(context), ITagRepository
 {
-    public Task<Tag?> Get(Guid tagId, CancellationToken cancellationToken = default) =>
-        dbContext.Tags
-            .AsNoTracking()
-            .SingleOrDefaultAsync(tag => tag.TagId == tagId, cancellationToken);
+    public Task<Result<Tag?>> Get(Guid tagId, CancellationToken cancellationToken = default) =>
+        UseContext((db, token) => db.Tags.AsNoTracking()
+            .SingleOrDefaultAsync(tag => tag.TagId == tagId, token), cancellationToken);
 
-    public async Task<IReadOnlyList<Tag>> GetByCategory(Guid categoryId,
+    public Task<Result<IReadOnlyList<Tag>>> GetByCategory(Guid categoryId,
         CancellationToken cancellationToken = default) =>
-        await dbContext.Tags
-            .AsNoTracking()
-            .Where(tag => tag.CategoryId == categoryId)
-            .OrderBy(tag => tag.Name)
-            .ToListAsync(cancellationToken);
+        UseContext<IReadOnlyList<Tag>>(async (db, token) => await db.Tags.AsNoTracking()
+            .Where(tag => tag.CategoryId == categoryId).OrderBy(tag => tag.Name)
+            .ToListAsync(token), cancellationToken);
 
-    public async Task Add(Tag tag, CancellationToken cancellationToken = default)
-    {
-        dbContext.Tags.Add(tag);
-        await dbContext.SaveChangesAsync(cancellationToken);
-    }
+    public Task<Result> Add(Tag tag, CancellationToken cancellationToken = default) =>
+        SaveContext(db => db.Tags.Add(tag), cancellationToken);
 
-    public async Task Update(Tag tag, CancellationToken cancellationToken = default)
-    {
-        var tracked = await dbContext.Tags
-            .SingleOrDefaultAsync(item => item.TagId == tag.TagId, cancellationToken);
-
-        if (tracked is null || !tag.IsArchived)
+    public Task<Result> Update(Tag tag, CancellationToken cancellationToken = default) =>
+        SaveContext(async (db, token) =>
         {
-            return;
-        }
+            var tracked = await db.Tags.SingleOrDefaultAsync(item => item.TagId == tag.TagId, token);
+            if (tracked is null || !tag.IsArchived)
+                return;
 
-        tracked.Archive();
-        await dbContext.SaveChangesAsync(cancellationToken);
-    }
+            tracked.Archive();
+        }, cancellationToken);
 }

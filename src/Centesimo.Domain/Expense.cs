@@ -15,14 +15,10 @@ public sealed class Expense
         Guid? tagId = null, string note = "", string? photoPath = null, Guid? recurringPaymentId = null)
     {
         if (expenseId == Guid.Empty || categoryId == Guid.Empty)
-        {
             throw new ArgumentException("Expense and category IDs are required.");
-        }
 
         if (amount.Cents == 0)
-        {
             throw new ArgumentOutOfRangeException(nameof(amount), "Expense amount must be greater than zero.");
-        }
 
         ExpenseId = expenseId;
         CategoryId = categoryId;

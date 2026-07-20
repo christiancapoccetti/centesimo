@@ -8,9 +8,7 @@ public sealed record RecurrenceOccurrence
     public RecurrenceOccurrence(Guid recurringPaymentId, DateOnly dueOn)
     {
         if (recurringPaymentId == Guid.Empty)
-        {
             throw new ArgumentException("Recurring payment ID is required.", nameof(recurringPaymentId));
-        }
 
         RecurringPaymentId = recurringPaymentId;
         DueOn = dueOn;

@@ -23,8 +23,8 @@ public sealed class ExpenseRepository_should_expected_behavior
         var expenses = await repository.GetBetween(new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31));
         await repository.Delete(included.ExpenseId);
 
-        Assert.Single(expenses);
-        Assert.Equal(included.ExpenseId, expenses[0].ExpenseId);
-        Assert.Null(await repository.Get(included.ExpenseId));
+        Assert.Single(expenses.Value);
+        Assert.Equal(included.ExpenseId, expenses.Value[0].ExpenseId);
+        Assert.Null((await repository.Get(included.ExpenseId)).Value);
     }
 }

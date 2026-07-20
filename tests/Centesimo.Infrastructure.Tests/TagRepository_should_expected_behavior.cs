@@ -19,8 +19,8 @@ public sealed class TagRepository_should_expected_behavior
 
         var tags = await repository.GetByCategory(firstCategory.CategoryId);
 
-        Assert.Single(tags);
-        Assert.Equal("Market", tags[0].Name);
+        Assert.Single(tags.Value);
+        Assert.Equal("Market", tags.Value[0].Name);
         Assert.Empty(database.Context.ChangeTracker.Entries());
     }
 }

@@ -9,9 +9,7 @@ public class Result
     protected Result(bool isSuccess, Error error)
     {
         if (isSuccess && error != Error.None || !isSuccess && error == Error.None)
-        {
             throw new ArgumentException("Result state and error are inconsistent.", nameof(error));
-        }
 
         IsSuccess = isSuccess;
         Error = error;

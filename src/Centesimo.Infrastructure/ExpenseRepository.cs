@@ -4,52 +4,41 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Centesimo.Infrastructure;
 
-public sealed class ExpenseRepository(CentesimoDbContext dbContext) : IExpenseRepository
+public sealed class ExpenseRepository(CentesimoDbContext context)
+    : RepositoryBase(context), IExpenseRepository
 {
-    public Task<Expense?> Get(Guid expenseId, CancellationToken cancellationToken = default) =>
-        dbContext.Expenses
-            .AsNoTracking()
-            .SingleOrDefaultAsync(expense => expense.ExpenseId == expenseId, cancellationToken);
+    public Task<Result<Expense?>> Get(Guid expenseId, CancellationToken cancellationToken = default) =>
+        UseContext((db, token) => db.Expenses.AsNoTracking()
+            .SingleOrDefaultAsync(expense => expense.ExpenseId == expenseId, token), cancellationToken);
 
-    public async Task<IReadOnlyList<Expense>> GetBetween(DateOnly from, DateOnly to,
+    public Task<Result<IReadOnlyList<Expense>>> GetBetween(DateOnly from, DateOnly to,
         CancellationToken cancellationToken = default) =>
-        await dbContext.Expenses
-            .AsNoTracking()
+        UseContext<IReadOnlyList<Expense>>(async (db, token) => await db.Expenses.AsNoTracking()
             .Where(expense => expense.OccurredOn >= from && expense.OccurredOn <= to)
-            .OrderByDescending(expense => expense.OccurredOn)
-            .ToListAsync(cancellationToken);
+            .OrderByDescending(expense => expense.OccurredOn).ToListAsync(token), cancellationToken);
 
-    public async Task Add(Expense expense, CancellationToken cancellationToken = default)
-    {
-        dbContext.Expenses.Add(expense);
-        await dbContext.SaveChangesAsync(cancellationToken);
-    }
+    public Task<Result> Add(Expense expense, CancellationToken cancellationToken = default) =>
+        SaveContext(db => db.Expenses.Add(expense), cancellationToken);
 
-    public async Task Update(Expense expense, CancellationToken cancellationToken = default)
-    {
-        var tracked = await dbContext.Expenses
-            .SingleOrDefaultAsync(item => item.ExpenseId == expense.ExpenseId, cancellationToken);
-
-        if (tracked is null)
+    public Task<Result> Update(Expense expense, CancellationToken cancellationToken = default) =>
+        SaveContext(async (db, token) =>
         {
-            return;
-        }
+            var tracked = await db.Expenses.SingleOrDefaultAsync(
+                item => item.ExpenseId == expense.ExpenseId, token);
+            if (tracked is null)
+                return;
 
-        dbContext.Entry(tracked).CurrentValues.SetValues(expense);
-        await dbContext.SaveChangesAsync(cancellationToken);
-    }
+            db.Entry(tracked).CurrentValues.SetValues(expense);
+        }, cancellationToken);
 
-    public async Task Delete(Guid expenseId, CancellationToken cancellationToken = default)
-    {
-        var tracked = await dbContext.Expenses
-            .SingleOrDefaultAsync(expense => expense.ExpenseId == expenseId, cancellationToken);
-
-        if (tracked is null)
+    public Task<Result> Delete(Guid expenseId, CancellationToken cancellationToken = default) =>
+        SaveContext(async (db, token) =>
         {
-            return;
-        }
+            var tracked = await db.Expenses.SingleOrDefaultAsync(
+                expense => expense.ExpenseId == expenseId, token);
+            if (tracked is null)
+                return;
 
-        dbContext.Expenses.Remove(tracked);
-        await dbContext.SaveChangesAsync(cancellationToken);
-    }
+            db.Expenses.Remove(tracked);
+        }, cancellationToken);
 }

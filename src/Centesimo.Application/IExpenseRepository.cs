@@ -4,10 +4,10 @@ namespace Centesimo.Application;
 
 public interface IExpenseRepository
 {
-    Task Add(Expense expense, CancellationToken cancellationToken = default);
-    Task<Expense?> Get(Guid expenseId, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<Expense>> GetBetween(DateOnly from, DateOnly to,
+    Task<Result> Add(Expense expense, CancellationToken cancellationToken = default);
+    Task<Result<Expense?>> Get(Guid expenseId, CancellationToken cancellationToken = default);
+    Task<Result<IReadOnlyList<Expense>>> GetBetween(DateOnly from, DateOnly to,
         CancellationToken cancellationToken = default);
-    Task Update(Expense expense, CancellationToken cancellationToken = default);
-    Task Delete(Guid expenseId, CancellationToken cancellationToken = default);
+    Task<Result> Update(Expense expense, CancellationToken cancellationToken = default);
+    Task<Result> Delete(Guid expenseId, CancellationToken cancellationToken = default);
 }

@@ -5,6 +5,7 @@
     <Project Path="src/Centesimo.Infrastructure/Centesimo.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Centesimo.Application.Tests/Centesimo.Application.Tests.csproj" />
     <Project Path="tests/Centesimo.Domain.Tests/Centesimo.Domain.Tests.csproj" />
     <Project Path="tests/Centesimo.Infrastructure.Tests/Centesimo.Infrastructure.Tests.csproj" />
   </Folder>

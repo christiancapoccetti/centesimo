@@ -4,41 +4,30 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Centesimo.Infrastructure;
 
-public sealed class CategoryRepository(CentesimoDbContext dbContext) : ICategoryRepository
+public sealed class CategoryRepository(CentesimoDbContext context)
+    : RepositoryBase(context), ICategoryRepository
 {
-    public Task<Category?> Get(Guid categoryId, CancellationToken cancellationToken = default) =>
-        dbContext.Categories
-            .AsNoTracking()
-            .SingleOrDefaultAsync(category => category.CategoryId == categoryId, cancellationToken);
+    public Task<Result<Category?>> Get(Guid categoryId, CancellationToken cancellationToken = default) =>
+        UseContext((db, token) => db.Categories.AsNoTracking()
+            .SingleOrDefaultAsync(category => category.CategoryId == categoryId, token), cancellationToken);
 
-    public async Task<IReadOnlyList<Category>> GetAll(CancellationToken cancellationToken = default) =>
-        await dbContext.Categories
-            .AsNoTracking()
-            .OrderBy(category => category.Name)
-            .ToListAsync(cancellationToken);
+    public Task<Result<IReadOnlyList<Category>>> GetAll(CancellationToken cancellationToken = default) =>
+        UseContext<IReadOnlyList<Category>>(async (db, token) => await db.Categories.AsNoTracking()
+            .OrderBy(category => category.Name).ToListAsync(token), cancellationToken);
 
-    public async Task Add(Category category, CancellationToken cancellationToken = default)
-    {
-        dbContext.Categories.Add(category);
-        await dbContext.SaveChangesAsync(cancellationToken);
-    }
+    public Task<Result> Add(Category category, CancellationToken cancellationToken = default) =>
+        SaveContext(db => db.Categories.Add(category), cancellationToken);
 
-    public async Task Update(Category category, CancellationToken cancellationToken = default)
-    {
-        var tracked = await dbContext.Categories
-            .SingleOrDefaultAsync(item => item.CategoryId == category.CategoryId, cancellationToken);
-
-        if (tracked is null)
+    public Task<Result> Update(Category category, CancellationToken cancellationToken = default) =>
+        SaveContext(async (db, token) =>
         {
-            return;
-        }
+            var tracked = await db.Categories.SingleOrDefaultAsync(
+                item => item.CategoryId == category.CategoryId, token);
+            if (tracked is null)
+                return;
 
-        tracked.SetBudget(category.MonthlyBudget);
-        if (category.IsArchived)
-        {
-            tracked.Archive();
-        }
-
-        await dbContext.SaveChangesAsync(cancellationToken);
-    }
+            tracked.SetBudget(category.MonthlyBudget);
+            if (category.IsArchived)
+                tracked.Archive();
+        }, cancellationToken);
 }
