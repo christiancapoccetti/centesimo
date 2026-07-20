@@ -31,20 +31,26 @@ public sealed class MonthlyOverviewService(ICategoryRepository categories, IExpe
             .OrderBy(category => category.Name)
             .ToList();
         var monthlyExpenses = expenseResult.Value;
+        var spendingByCategory = monthlyExpenses
+            .GroupBy(expense => expense.CategoryId)
+            .ToDictionary(group => group.Key, group => group.Sum(expense => expense.Amount.Cents));
         var categoryOverview = activeCategories
             .Select(category => new MonthlyCategoryOverview(
                 category.CategoryId,
                 category.Name,
                 category.Icon,
                 category.Color,
-                monthlyExpenses
-                    .Where(expense => expense.CategoryId == category.CategoryId)
-                    .Sum(expense => expense.Amount.Cents),
+                spendingByCategory.GetValueOrDefault(category.CategoryId),
                 category.MonthlyBudget?.Cents))
+            .Where(category => category.SpentCents > 0)
+            .OrderByDescending(category => category.SpentCents)
+            .ThenBy(category => category.Name)
             .ToList();
         var categoryLookup = categoryResult.Value.ToDictionary(category => category.CategoryId);
         var expenseOverview = monthlyExpenses
             .OrderByDescending(expense => expense.OccurredOn)
+            .ThenByDescending(expense => expense.ExpenseId)
+            .Take(5)
             .Select(expense => ToOverview(expense, categoryLookup))
             .ToList();
         var configuredBudgets = activeCategories

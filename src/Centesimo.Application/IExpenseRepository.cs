@@ -6,6 +6,8 @@ public interface IExpenseRepository
 {
     Task<Result> Add(Expense expense, CancellationToken cancellationToken = default);
     Task<Result<Expense?>> Get(Guid expenseId, CancellationToken cancellationToken = default);
+    Task<Result<IReadOnlyList<Expense>>> GetByCategoryBetween(Guid categoryId, DateOnly from, DateOnly to,
+        CancellationToken cancellationToken = default);
     Task<Result<IReadOnlyList<Expense>>> GetBetween(DateOnly from, DateOnly to,
         CancellationToken cancellationToken = default);
     Task<Result> Update(Expense expense, CancellationToken cancellationToken = default);

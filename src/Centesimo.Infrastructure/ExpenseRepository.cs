@@ -11,6 +11,13 @@ public sealed class ExpenseRepository(CentesimoDbContext context)
         UseContext((db, token) => db.Expenses.AsNoTracking()
             .SingleOrDefaultAsync(expense => expense.ExpenseId == expenseId, token), cancellationToken);
 
+    public Task<Result<IReadOnlyList<Expense>>> GetByCategoryBetween(Guid categoryId, DateOnly from,
+        DateOnly to, CancellationToken cancellationToken = default) =>
+        UseContext<IReadOnlyList<Expense>>(async (db, token) => await db.Expenses.AsNoTracking()
+            .Where(expense => expense.CategoryId == categoryId &&
+                expense.OccurredOn >= from && expense.OccurredOn <= to)
+            .OrderByDescending(expense => expense.OccurredOn)
+            .ToListAsync(token), cancellationToken);
     public Task<Result<IReadOnlyList<Expense>>> GetBetween(DateOnly from, DateOnly to,
         CancellationToken cancellationToken = default) =>
         UseContext<IReadOnlyList<Expense>>(async (db, token) => await db.Expenses.AsNoTracking()

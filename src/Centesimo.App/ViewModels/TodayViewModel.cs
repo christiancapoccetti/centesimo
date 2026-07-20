@@ -20,6 +20,8 @@ public sealed class TodayViewModel(MonthlyOverviewService overviewService) : Obs
     public ObservableCollection<MonthlyCategoryItemViewModel> Categories { get; } = [];
     public ObservableCollection<MonthlyExpenseItemViewModel> Expenses { get; } = [];
     public bool IsLoading { get => _isLoading; private set => SetProperty(ref _isLoading, value); }
+    public int SelectedYear => _selectedMonth.Year;
+    public int SelectedMonth => _selectedMonth.Month;
     public string MonthlyTotal { get => _monthlyTotal; private set => SetProperty(ref _monthlyTotal, value); }
     public string BudgetSummary { get => _budgetSummary; private set => SetProperty(ref _budgetSummary, value); }
     public double BudgetProgress { get => _budgetProgress; private set => SetProperty(ref _budgetProgress, value); }
@@ -27,8 +29,8 @@ public sealed class TodayViewModel(MonthlyOverviewService overviewService) : Obs
         ? $"Questo mese · {FormatMonth(_selectedMonth)}"
         : FormatMonth(_selectedMonth);
     public string ExpenseSectionTitle => _selectedMonth == CurrentMonth
-        ? "Spese del mese"
-        : $"Spese di {_selectedMonth.ToDateTime(TimeOnly.MinValue).ToString("MMMM", ItalianCulture)}";
+        ? "Ultime spese"
+        : $"Ultime spese di {_selectedMonth.ToDateTime(TimeOnly.MinValue).ToString("MMMM", ItalianCulture)}";
     public string EmptyMessage => $"Nessuna spesa in {FormatMonth(_selectedMonth)}.";
     public string ErrorMessage
     {
@@ -112,6 +114,8 @@ public sealed class TodayViewModel(MonthlyOverviewService overviewService) : Obs
         OnPropertyChanged(nameof(MonthTitle));
         OnPropertyChanged(nameof(ExpenseSectionTitle));
         OnPropertyChanged(nameof(EmptyMessage));
+        OnPropertyChanged(nameof(SelectedYear));
+        OnPropertyChanged(nameof(SelectedMonth));
         NotifyNavigationState();
     }
 
@@ -131,9 +135,10 @@ public sealed class TodayViewModel(MonthlyOverviewService overviewService) : Obs
         month.ToDateTime(TimeOnly.MinValue).ToString("MMMM yyyy", ItalianCulture);
 
     public sealed record MonthlyCategoryItemViewModel(
-        string Name, string Icon, string Color, string AmountSummary, double Progress)
+        Guid CategoryId, string Name, string Icon, string Color, string AmountSummary, double Progress)
     {
         public static MonthlyCategoryItemViewModel From(MonthlyCategoryOverview category) => new(
+            category.CategoryId,
             category.Name,
             category.Icon,
             category.Color,

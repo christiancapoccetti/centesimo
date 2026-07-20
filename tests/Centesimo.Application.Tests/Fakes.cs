@@ -27,6 +27,7 @@ internal sealed class FakeExpenseRepository : IExpenseRepository
     public List<Expense> Items { get; } = [];
     public Task<Result> Add(Expense value, CancellationToken token = default) { Items.Add(value); return Task.FromResult(Result.Success()); }
     public Task<Result<Expense?>> Get(Guid id, CancellationToken token = default) => Task.FromResult(Result<Expense?>.Success(Items.SingleOrDefault(x => x.ExpenseId == id)));
+    public Task<Result<IReadOnlyList<Expense>>> GetByCategoryBetween(Guid categoryId, DateOnly from, DateOnly to, CancellationToken token = default) => Task.FromResult(Result<IReadOnlyList<Expense>>.Success(Items.Where(x => x.CategoryId == categoryId && x.OccurredOn >= from && x.OccurredOn <= to).ToList()));
     public Task<Result<IReadOnlyList<Expense>>> GetBetween(DateOnly from, DateOnly to, CancellationToken token = default) => Task.FromResult(Result<IReadOnlyList<Expense>>.Success(Items.Where(x => x.OccurredOn >= from && x.OccurredOn <= to).ToList()));
     public Task<Result> Update(Expense value, CancellationToken token = default) { Items.RemoveAll(x => x.ExpenseId == value.ExpenseId); Items.Add(value); return Task.FromResult(Result.Success()); }
     public Task<Result> Delete(Guid id, CancellationToken token = default) { Items.RemoveAll(x => x.ExpenseId == id); return Task.FromResult(Result.Success()); }

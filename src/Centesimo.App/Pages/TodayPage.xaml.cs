@@ -33,6 +33,13 @@ public partial class TodayPage : ContentPage
         await Shell.Current.GoToAsync($"{nameof(ExpenseEditorPage)}?expenseId={expense.ExpenseId}");
     }
 
+    private async void OnCategoryClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { CommandParameter: TodayViewModel.MonthlyCategoryItemViewModel category })
+            return;
+
+        await Shell.Current.GoToAsync($"{nameof(CategorySpendingPage)}?categoryId={category.CategoryId}&year={_viewModel.SelectedYear}&month={_viewModel.SelectedMonth}");
+    }
     private void OnCardPressed(object? sender, EventArgs e) =>
         InteractionFeedback.Press(sender);
 

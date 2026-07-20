@@ -43,6 +43,7 @@
                                             <Label Grid.Column="1" Text="{Binding Name}" Style="{StaticResource TitleMedium}" />
                                             <Label Grid.Column="2" Text="{Binding AmountSummary}" Style="{StaticResource BodyMedium}" />
                                             <ProgressBar Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Progress="{Binding Progress}" HeightRequest="5" ProgressColor="{StaticResource PrimaryLight}" />
+                                            <Button Grid.RowSpan="2" Grid.ColumnSpan="3" ZIndex="2" BackgroundColor="Transparent" Text="" Pressed="OnCardPressed" Released="OnCardReleased" Clicked="OnCategoryClicked" CommandParameter="{Binding .}" SemanticProperties.Description="Apri dettaglio categoria" SemanticProperties.Hint="Mostra le spese divise per tag" />
                                         </Grid>
                                     </Border>
                                 </DataTemplate>

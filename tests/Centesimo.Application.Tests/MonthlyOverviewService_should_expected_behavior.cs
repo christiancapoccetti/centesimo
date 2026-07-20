@@ -47,4 +47,29 @@ public sealed class MonthlyOverviewService_should_expected_behavior
         Assert.Empty(result.Value.Expenses);
         Assert.Equal(0, result.Value.SpentCents);
     }
-}
+
+    [Fact]
+    public async Task Should_show_spending_categories_in_descending_order_and_only_five_latest_expenses()
+    {
+        var categories = new FakeCategoryRepository();
+        var expenses = new FakeExpenseRepository();
+        var food = new Category(Guid.NewGuid(), "Food", "cart", "#176B5B");
+        var travel = new Category(Guid.NewGuid(), "Travel", "car", "#4F5F7A");
+        var unused = new Category(Guid.NewGuid(), "Unused", "more", "#6F7975");
+        categories.Items.AddRange([food, travel, unused]);
+        for (var day = 1; day <= 7; day++)
+            expenses.Items.Add(new Expense(Guid.NewGuid(), food.CategoryId, new Money(100), new DateOnly(2026, 7, day)));
+        expenses.Items.Add(new Expense(Guid.NewGuid(), travel.CategoryId, new Money(1000), new DateOnly(2026, 7, 1)));
+        var service = new MonthlyOverviewService(categories, expenses);
+
+        var result = await service.Get(2026, 7);
+
+        Assert.True(result.IsSuccess);
+        Assert.Collection(result.Value.Categories,
+            category => Assert.Equal(travel.CategoryId, category.CategoryId),
+            category => Assert.Equal(food.CategoryId, category.CategoryId));
+        Assert.DoesNotContain(result.Value.Categories, category => category.CategoryId == unused.CategoryId);
+        Assert.Equal(5, result.Value.Expenses.Count);
+        Assert.Equal(new DateOnly(2026, 7, 7), result.Value.Expenses[0].OccurredOn);
+        Assert.Equal(new DateOnly(2026, 7, 3), result.Value.Expenses[4].OccurredOn);
+    }}
