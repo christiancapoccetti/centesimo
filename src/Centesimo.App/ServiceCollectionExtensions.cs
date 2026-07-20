@@ -19,6 +19,10 @@ public static class ServiceCollectionExtensions
             () => provider.GetRequiredService<AppShell>());
         services.AddSingleton<CategoryEditorViewModel>();
         services.AddSingleton<CategoryEditorPage>();
+        services.AddTransient<CategorySpendingViewModel>();
+        services.AddTransient<CategorySpendingPage>();
+        services.AddTransient<TagExpensesViewModel>();
+        services.AddTransient<TagExpensesPage>();
         services.AddTransient<ExpenseEditorViewModel>();
         services.AddTransient<ExpenseEditorPage>();
         return services;
