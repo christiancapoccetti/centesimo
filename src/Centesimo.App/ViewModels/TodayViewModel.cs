@@ -5,21 +5,31 @@ using Centesimo.Domain;
 
 namespace Centesimo.App.ViewModels;
 
-public sealed class TodayViewModel(TodayOverviewService overviewService) : ObservableObject
+public sealed class TodayViewModel(MonthlyOverviewService overviewService) : ObservableObject
 {
     private static readonly CultureInfo ItalianCulture = CultureInfo.GetCultureInfo("it-IT");
+    private DateOnly _selectedMonth = CurrentMonth;
     private bool _isLoading;
     private string _errorMessage = "";
     private string _monthlyTotal = FormatMoney(0);
     private string _budgetSummary = "Nessun budget impostato";
     private double _budgetProgress;
 
-    public ObservableCollection<TodayCategoryItemViewModel> Categories { get; } = [];
-    public ObservableCollection<TodayExpenseItemViewModel> Expenses { get; } = [];
+    private static DateOnly CurrentMonth => new(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+    public ObservableCollection<MonthlyCategoryItemViewModel> Categories { get; } = [];
+    public ObservableCollection<MonthlyExpenseItemViewModel> Expenses { get; } = [];
     public bool IsLoading { get => _isLoading; private set => SetProperty(ref _isLoading, value); }
     public string MonthlyTotal { get => _monthlyTotal; private set => SetProperty(ref _monthlyTotal, value); }
     public string BudgetSummary { get => _budgetSummary; private set => SetProperty(ref _budgetSummary, value); }
     public double BudgetProgress { get => _budgetProgress; private set => SetProperty(ref _budgetProgress, value); }
+    public string MonthTitle => _selectedMonth == CurrentMonth
+        ? $"Questo mese · {FormatMonth(_selectedMonth)}"
+        : FormatMonth(_selectedMonth);
+    public string ExpenseSectionTitle => _selectedMonth == CurrentMonth
+        ? "Spese del mese"
+        : $"Spese di {_selectedMonth.ToDateTime(TimeOnly.MinValue).ToString("MMMM", ItalianCulture)}";
+    public string EmptyMessage => $"Nessuna spesa in {FormatMonth(_selectedMonth)}.";
     public string ErrorMessage
     {
         get => _errorMessage;
@@ -33,16 +43,46 @@ public sealed class TodayViewModel(TodayOverviewService overviewService) : Obser
     public bool HasCategories => Categories.Count > 0;
     public bool HasExpenses => Expenses.Count > 0;
     public bool IsExpenseEmpty => !IsLoading && !HasError && !HasExpenses;
+    public bool CanGoPrevious => !IsLoading;
+    public bool CanGoNext => !IsLoading && MonthlyNavigation.CanGoNext(_selectedMonth, CurrentMonth);
 
-    public async Task Load()
+    public Task Load() => LoadMonth(_selectedMonth);
+
+    public async Task PreviousMonth()
     {
+        if (IsLoading)
+            return;
+
+        await LoadMonth(MonthlyNavigation.Previous(_selectedMonth));
+    }
+
+    public async Task NextMonth()
+    {
+        if (!CanGoNext)
+            return;
+
+        await LoadMonth(MonthlyNavigation.Next(_selectedMonth, CurrentMonth));
+    }
+
+    private async Task LoadMonth(DateOnly month)
+    {
+        if (IsLoading)
+            return;
+
+        _selectedMonth = month;
         IsLoading = true;
         ErrorMessage = "";
-        var result = await overviewService.Get(DateOnly.FromDateTime(DateTime.Today));
+        NotifyNavigationState();
+        var result = await overviewService.Get(month.Year, month.Month);
         Categories.Clear();
         Expenses.Clear();
         if (result.IsFailure)
+        {
+            MonthlyTotal = FormatMoney(0);
+            BudgetSummary = "Nessun budget disponibile";
+            BudgetProgress = 0;
             ErrorMessage = result.Error.Message;
+        }
         else
             Apply(result.Value);
 
@@ -50,17 +90,17 @@ public sealed class TodayViewModel(TodayOverviewService overviewService) : Obser
         NotifyState();
     }
 
-    private void Apply(TodayOverview overview)
+    private void Apply(MonthlyOverview overview)
     {
-        MonthlyTotal = FormatMoney(overview.MonthlySpentCents);
+        MonthlyTotal = FormatMoney(overview.SpentCents);
         BudgetSummary = overview.TotalBudgetCents.HasValue
             ? $"su {FormatMoney(overview.TotalBudgetCents.Value)} di budget"
             : "Nessun budget impostato";
-        BudgetProgress = Progress(overview.MonthlySpentCents, overview.TotalBudgetCents);
+        BudgetProgress = Progress(overview.SpentCents, overview.TotalBudgetCents);
         foreach (var category in overview.Categories)
-            Categories.Add(TodayCategoryItemViewModel.From(category));
+            Categories.Add(MonthlyCategoryItemViewModel.From(category));
         foreach (var expense in overview.Expenses)
-            Expenses.Add(TodayExpenseItemViewModel.From(expense));
+            Expenses.Add(MonthlyExpenseItemViewModel.From(expense));
     }
 
     private void NotifyState()
@@ -69,6 +109,16 @@ public sealed class TodayViewModel(TodayOverviewService overviewService) : Obser
         OnPropertyChanged(nameof(HasCategories));
         OnPropertyChanged(nameof(HasExpenses));
         OnPropertyChanged(nameof(IsExpenseEmpty));
+        OnPropertyChanged(nameof(MonthTitle));
+        OnPropertyChanged(nameof(ExpenseSectionTitle));
+        OnPropertyChanged(nameof(EmptyMessage));
+        NotifyNavigationState();
+    }
+
+    private void NotifyNavigationState()
+    {
+        OnPropertyChanged(nameof(CanGoPrevious));
+        OnPropertyChanged(nameof(CanGoNext));
     }
 
     private static double Progress(long spent, long? budget) =>
@@ -77,10 +127,13 @@ public sealed class TodayViewModel(TodayOverviewService overviewService) : Obser
     private static string FormatMoney(long cents) =>
         (cents / 100m).ToString("C", ItalianCulture);
 
-    public sealed record TodayCategoryItemViewModel(
+    private static string FormatMonth(DateOnly month) =>
+        month.ToDateTime(TimeOnly.MinValue).ToString("MMMM yyyy", ItalianCulture);
+
+    public sealed record MonthlyCategoryItemViewModel(
         string Name, string Icon, string Color, string AmountSummary, double Progress)
     {
-        public static TodayCategoryItemViewModel From(TodayCategoryOverview category) => new(
+        public static MonthlyCategoryItemViewModel From(MonthlyCategoryOverview category) => new(
             category.Name,
             category.Icon,
             category.Color,
@@ -90,15 +143,17 @@ public sealed class TodayViewModel(TodayOverviewService overviewService) : Obser
             TodayViewModel.Progress(category.SpentCents, category.BudgetCents));
     }
 
-    public sealed record TodayExpenseItemViewModel(
-        Guid ExpenseId, string CategoryName, string Icon, string Color, string Amount, string Note, bool HasNote)
+    public sealed record MonthlyExpenseItemViewModel(
+        Guid ExpenseId, string CategoryName, string Icon, string Color, string Amount,
+        string Date, string Note, bool HasNote)
     {
-        public static TodayExpenseItemViewModel From(TodayExpenseOverview expense) => new(
+        public static MonthlyExpenseItemViewModel From(MonthlyExpenseOverview expense) => new(
             expense.ExpenseId,
             expense.CategoryName,
             expense.CategoryIcon,
             expense.CategoryColor,
             FormatMoney(expense.AmountCents),
+            expense.OccurredOn.ToDateTime(TimeOnly.MinValue).ToString("ddd d MMM", ItalianCulture),
             expense.Note,
             expense.Note.HasValue());
     }

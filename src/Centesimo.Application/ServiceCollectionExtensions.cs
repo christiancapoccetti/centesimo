@@ -10,8 +10,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<TagService>();
         services.AddScoped<ExpenseService>();
         services.AddScoped<BudgetOverviewService>();
-        services.AddScoped<TodayOverviewService>();
-        services.AddScoped<ExpenseHistoryService>();
+        services.AddScoped<MonthlyOverviewService>();
         services.AddScoped<RecurringPaymentService>();
         return services;
     }

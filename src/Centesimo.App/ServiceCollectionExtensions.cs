@@ -19,8 +19,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<CategoryEditorPage>();
         services.AddTransient<ExpenseEditorViewModel>();
         services.AddTransient<ExpenseEditorPage>();
-        services.AddTransient<ExpenseHistoryViewModel>();
-        services.AddTransient<ExpenseHistoryPage>();
         return services;
     }
 }
