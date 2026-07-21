@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using Centesimo.App.Controls;
 using Centesimo.Application;
 using Centesimo.Domain;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +18,7 @@ public sealed class InsightsViewModel(IServiceScopeFactory scopeFactory) : Obser
     private bool _showAllInsights;
     public ObservableCollection<InsightCardViewModel> Insights { get; } = [];
     public ObservableCollection<InsightCardViewModel> AllInsights { get; } = [];
-    public ObservableCollection<InsightCategoryViewModel> Categories { get; } = [];
+    public ObservableCollection<CategoryBreakdownItemViewModel> Categories { get; } = [];
     public string SummaryLabel => _period == InsightPeriod.Month ? "QUESTO MESE" : "QUESTO ANNO";
     public string Total { get => _total; private set => SetProperty(ref _total, value); }
     public string Comparison { get => _comparison; private set => SetProperty(ref _comparison, value); }
@@ -121,9 +122,4 @@ public sealed class InsightsViewModel(IServiceScopeFactory scopeFactory) : Obser
 
     public sealed record InsightCardViewModel(string Title, string Description, Guid? CategoryId, Guid? ExpenseId,
         bool IsActionable);
-    public sealed record InsightCategoryViewModel(Guid CategoryId, string Name, string Icon, string Color,
-        string Amount, string Percentage, string Change, double Progress, bool IsActionable)
-    {
-        public string Description => $"{Name}, {Amount}, {Percentage}, {Change}.";
-    }
 }

@@ -1,4 +1,5 @@
 using Centesimo.App.ViewModels;
+using Centesimo.App.Controls;
 using Centesimo.Application;
 
 namespace Centesimo.App.Pages;
@@ -51,23 +52,10 @@ public partial class TodayPage : ContentPage
     private async void OnNextMonthClicked(object? sender, EventArgs e) =>
         await _viewModel.NextMonth();
 
-    private async void OnExpenseClicked(object? sender, EventArgs e)
+    private async void OnCategoryClicked(object? sender, CategoryBreakdownItemClickedEventArgs e)
     {
-        if (sender is not Button { CommandParameter: TodayViewModel.MonthlyExpenseItemViewModel expense })
-            return;
-
-        await Shell.Current.GoToAsync($"{nameof(ExpenseEditorPage)}?expenseId={expense.ExpenseId}");
-    }
-
-    private async void OnCategoryClicked(object? sender, EventArgs e)
-    {
-        if (_viewModel.IsYearlyOverview)
-            return;
-
-        if (sender is not Button { CommandParameter: TodayViewModel.MonthlyCategoryItemViewModel category })
-            return;
-
-        await Shell.Current.GoToAsync($"{nameof(CategorySpendingPage)}?categoryId={category.CategoryId}&year={_viewModel.SelectedYear}&month={_viewModel.SelectedMonth}");
+        var period = _viewModel.IsYearlyOverview ? "&period=year" : "";
+        await Shell.Current.GoToAsync($"{nameof(CategorySpendingPage)}?categoryId={e.Category.CategoryId}&year={_viewModel.SelectedYear}&month={_viewModel.SelectedMonth}{period}");
     }
     private void OnCardPressed(object? sender, EventArgs e) =>
         InteractionFeedback.Press(sender);

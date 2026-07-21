@@ -10,7 +10,7 @@ It is also a simple, privacy-first Android expense tracker built with .NET MAUI.
 - Create and archive tags within a category.
 - Add expenses with an amount, date, category, optional tag, and optional note.
 - Browse monthly expense history, then edit or delete an expense.
-- Review monthly or yearly spending and category budget progress from the home dashboard, including the ten highest expenses of a selected year.
+- Review monthly or yearly spending and category budget progress from the home dashboard, with category details available for both periods.
 - Configure weekly, monthly, or yearly recurring payments, with optional end dates. Due expenses are created when the app is opened, and upcoming payments generate Android notifications.
 - Create an expense draft by voice on Android, with a multilingual Whisper model downloaded once and kept local, plus explicit confirmation in the expense editor.
 - Review local spending trends, category comparisons, and history-based insights for the current month or year.

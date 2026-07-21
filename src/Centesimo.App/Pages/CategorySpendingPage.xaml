@@ -44,8 +44,8 @@
                                 <Label Text="{Binding Name}" Style="{StaticResource TitleMedium}" />
                                 <Label Grid.Column="1" Text="{Binding Total}" Style="{StaticResource TitleMedium}" />
                                 <Label Grid.Row="1" Text="{Binding CountText}" Style="{StaticResource BodyMedium}" />
-                                <Label Grid.Column="2" Grid.RowSpan="2" Text="›" FontSize="22" HorizontalOptions="Center" VerticalOptions="Center" />
-                                <Button Grid.RowSpan="2" Grid.ColumnSpan="3" ZIndex="2" BackgroundColor="Transparent" Text="" Pressed="OnCardPressed" Released="OnCardReleased" Clicked="OnTagClicked" CommandParameter="{Binding .}" SemanticProperties.Description="{Binding Name}" SemanticProperties.Hint="Mostra le spese del tag" />
+                                <Label Grid.Column="2" Grid.RowSpan="2" Text="›" IsVisible="{Binding IsActionable}" FontSize="22" HorizontalOptions="Center" VerticalOptions="Center" />
+                                <Button Grid.RowSpan="2" Grid.ColumnSpan="3" ZIndex="2" BackgroundColor="Transparent" Text="" Pressed="OnCardPressed" Released="OnCardReleased" Clicked="OnTagClicked" CommandParameter="{Binding .}" IsVisible="{Binding IsActionable}" SemanticProperties.Description="{Binding Name}" SemanticProperties.Hint="Mostra le spese del tag" />
                             </Grid>
                         </VerticalStackLayout>
                     </Border>
