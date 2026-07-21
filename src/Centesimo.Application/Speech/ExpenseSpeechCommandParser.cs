@@ -5,6 +5,7 @@ namespace Centesimo.Application;
 
 public sealed partial class ExpenseSpeechCommandParser
 {
+    private static readonly ItalianSpokenNumberParser SpokenNumbers = new();
     public Result<ExpenseSpeechCommand> Parse(string transcription)
     {
         if (string.IsNullOrWhiteSpace(transcription))
@@ -16,7 +17,7 @@ public sealed partial class ExpenseSpeechCommandParser
         if (!category.Success)
             return Result<ExpenseSpeechCommand>.Failure(new Error("Speech.InvalidCommand", "Di' ad esempio: aggiungi spesa di 50 euro alla categoria auto."));
 
-        var amountText = amount.Success ? amount.Groups["amount"].Value : SpokenAmountPattern().Match(normalized).Groups["amount"].Value;
+        var amountText = amount.Success ? amount.Groups["amount"].Value : AmountPhrasePattern().Match(normalized).Groups["amount"].Value;
         if (!TryParseAmount(amountText, out var value) || value <= 0)
             return Result<ExpenseSpeechCommand>.Failure(new Error("Speech.InvalidAmount", "L'importo non è valido."));
 
@@ -34,8 +35,8 @@ public sealed partial class ExpenseSpeechCommandParser
     [GeneratedRegex(@"(?:(?:di|da)\s+)?(?<amount>\d+(?:[,.]\d{1,2})?)\s*(?:€|euro|eur)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex AmountPattern();
 
-    [GeneratedRegex(@"(?<amount>zero|uno|due|tre|quattro|cinque|dieci|venti|cinquanta|cento|centoventi|mille(?:\s+duecento)?|milleduecento)\s*(?:euro|eur)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-    private static partial Regex SpokenAmountPattern();
+    [GeneratedRegex(@"(?<amount>(?:zero|uno|due|tre|quattro|cinque|sei|sette|otto|nove|dieci|undici|dodici|tredici|quattordici|quindici|sedici|diciassette|diciotto|diciannove|venti|trenta|quaranta|cinquanta|sessanta|settanta|ottanta|novanta|cento|mille|mila|\s)+\s*(?:euro|eur|€)(?:\s+(?:e|virgola)\s+(?:\w+|\d+))?)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex AmountPhrasePattern();
 
     [GeneratedRegex(@"(?:(?:alla|nella|in)\s+categoria|categoria|spesa\s+(?:su|in)|(?:su|in))\s+(?<category>.+?)(?=\s+(?:sotto\s+)?tag\s+|\s+con\s+nota\s+|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex CategoryPattern();
@@ -53,6 +54,7 @@ public sealed partial class ExpenseSpeechCommandParser
         if (decimal.TryParse(text.Replace(',', '.'), NumberStyles.Number, CultureInfo.InvariantCulture, out value))
             return true;
 
+        if (SpokenNumbers.TryParse(text, out value)) return true;
         var normalized = text.Trim().ToLowerInvariant().Replace(" ", "");
         var values = new Dictionary<string, decimal>
         {
