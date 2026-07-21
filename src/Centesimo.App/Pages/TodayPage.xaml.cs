@@ -118,7 +118,7 @@ public partial class TodayPage : ContentPage
             _viewModel.IsSpeechProcessing = false;
             if (result.IsFailure)
             {
-                _viewModel.SpeechErrorMessage = result.Error.Message;
+                _viewModel.SpeechErrorMessage = $"Non ho capito bene. {result.Error.Message}";
                 return;
             }
 
