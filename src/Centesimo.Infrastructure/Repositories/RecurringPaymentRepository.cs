@@ -16,6 +16,13 @@ public sealed class RecurringPaymentRepository(CentesimoDbContext context)
             .SingleOrDefaultAsync(payment => payment.RecurringPaymentId == recurringPaymentId, token),
             cancellationToken);
 
+    public Task<Result<IReadOnlyList<RecurringPayment>>> GetAll(
+        CancellationToken cancellationToken = default) =>
+        UseContext<IReadOnlyList<RecurringPayment>>(async (db, token) =>
+            await db.RecurringPayments.AsNoTracking()
+                .OrderBy(payment => payment.NextDueOn)
+                .ToListAsync(token), cancellationToken);
+
     public Task<Result<IReadOnlyList<RecurringPayment>>> GetDue(DateOnly through,
         CancellationToken cancellationToken = default) =>
         UseContext<IReadOnlyList<RecurringPayment>>(async (db, token) =>

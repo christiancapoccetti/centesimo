@@ -1,30 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="Centesimo.App.Pages.RecurringPaymentsPage"
-             Title="Regolari"
-             SafeAreaEdges="All">
-    <ScrollView>
-        <VerticalStackLayout Padding="24" Spacing="24">
-            <VerticalStackLayout Spacing="4">
-                <Label Text="Pagamenti regolari"
-                       Style="{StaticResource HeadlineLarge}"
-                       SemanticProperties.HeadingLevel="Level1" />
-                <Label Text="Gestisci le spese che si ripetono nel tempo."
-                       Style="{StaticResource BodyMedium}" />
-            </VerticalStackLayout>
-
-            <Border Style="{StaticResource SurfaceCard}">
-                <VerticalStackLayout Style="{StaticResource EmptyStateLayout}">
-                    <Label Text="Nessun pagamento regolare"
-                           Style="{StaticResource TitleLarge}"
-                           HorizontalTextAlignment="Center"
-                           SemanticProperties.HeadingLevel="Level2" />
-                    <Label Text="Le prossime spese automatiche appariranno qui."
-                           Style="{StaticResource BodyMedium}"
-                           HorizontalTextAlignment="Center" />
-                </VerticalStackLayout>
-            </Border>
-        </VerticalStackLayout>
-    </ScrollView>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="Centesimo.App.Pages.RecurringPaymentsPage" Title="Pagamenti regolari" SafeAreaEdges="All">
+ <Grid Padding="20,16" RowDefinitions="Auto,*,Auto" RowSpacing="16">
+  <Grid ColumnDefinitions="Auto,*"><Button Text="Chiudi" Style="{StaticResource TextActionButton}" Clicked="OnBackClicked" SemanticProperties.Description="Torna alle impostazioni"/><VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center"><Label Text="Pagamenti regolari" Style="{StaticResource HeadlineLarge}" SemanticProperties.HeadingLevel="Level1"/><Label Text="Le spese vengono create automaticamente alla scadenza." Style="{StaticResource BodyMedium}"/></VerticalStackLayout></Grid>
+  <CollectionView Grid.Row="1" ItemsSource="{Binding Payments}" SelectionMode="None" Margin="0,8"><CollectionView.Header><VerticalStackLayout Spacing="8"><ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}"/><Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" TextColor="{StaticResource ErrorLight}"/><Border Style="{StaticResource SurfaceCard}" IsVisible="{Binding IsEmpty}"><Label Text="Nessun pagamento regolare. Aggiungine uno per automatizzare le spese." Style="{StaticResource BodyMedium}" HorizontalTextAlignment="Center"/></Border></VerticalStackLayout></CollectionView.Header><CollectionView.ItemTemplate><DataTemplate><Border Style="{StaticResource SurfaceCard}" Margin="0,6"><VerticalStackLayout Spacing="8"><Grid ColumnDefinitions="*,Auto"><Label Text="{Binding Amount}" Style="{StaticResource TitleLarge}"/><Label Grid.Column="1" Text="{Binding Status}" Style="{StaticResource BodyMedium}"/></Grid><Label Text="{Binding Schedule}" Style="{StaticResource BodyMedium}"/><Label Text="{Binding NextDue}" Style="{StaticResource BodyMedium}"/><Grid ColumnDefinitions="*,*,*"><Button Text="Modifica" Style="{StaticResource TextActionButton}" Clicked="OnEditClicked" CommandParameter="{Binding .}"/><Button Grid.Column="1" Text="{Binding SuspendResumeText}" IsVisible="{Binding CanChangeState}" Style="{StaticResource TextActionButton}" Clicked="OnSuspendResumeClicked" CommandParameter="{Binding .}"/><Button Grid.Column="2" Text="Termina" IsVisible="{Binding CanChangeState}" Style="{StaticResource TextActionButton}" TextColor="{StaticResource ErrorLight}" Clicked="OnEndClicked" CommandParameter="{Binding .}"/></Grid></VerticalStackLayout></Border></DataTemplate></CollectionView.ItemTemplate></CollectionView>
+  <Button Grid.Row="2" Text="Aggiungi pagamento" Style="{StaticResource PrimaryActionButton}" Clicked="OnAddClicked"/>
+ </Grid>
 </ContentPage>

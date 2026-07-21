@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IO.Compression;
 using Centesimo.Application;
+using Centesimo.Domain;
 using Microsoft.Data.Sqlite;
 
 namespace Centesimo.Infrastructure;
@@ -183,11 +184,17 @@ public sealed class MoneyManagerBackupReader : IMoneyManagerBackupReader
                 ignored++;
         }
 
+        var recurringPayments = await HasRecurringSchema(connection, cancellationToken)
+            ? await ReadRecurringPayments(connection, transactions.Items, links, categories, tags, usedCategories,
+                importedTags, cancellationToken)
+            : [];
+
         var importedCategories = categories.Values
             .Where(value => usedCategories.Contains(value.SourceUid))
             .ToList();
         return Result<MoneyManagerImportData>.Success(new MoneyManagerImportData(
-            importedCategories, importedTags.Values.ToList(), validExpenses.Values.ToList(), ignored, uncategorized));
+            importedCategories, importedTags.Values.ToList(), validExpenses.Values.ToList(), ignored, uncategorized,
+            recurringPayments));
     }
 
     private static async Task<bool> HasRequiredSchema(SqliteConnection connection, CancellationToken token)
@@ -308,6 +315,121 @@ public sealed class MoneyManagerBackupReader : IMoneyManagerBackupReader
         }
 
         return new TransactionReadResult(result, invalid);
+    }
+
+    private static async Task<bool> HasRecurringSchema(SqliteConnection connection, CancellationToken token)
+    {
+        var required = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["reminding"] = ["uid", "period", "startDate", "endDate", "enabled", "isRemoved", "remindingType"],
+            ["regular_payment_period"] = ["uid", "lastTransactionDate"]
+        };
+        foreach (var table in required)
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = $"PRAGMA table_info([{table.Key}])";
+            await using var reader = await command.ExecuteReaderAsync(token);
+            var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            while (await reader.ReadAsync(token))
+                columns.Add(reader.GetString(1));
+            if (table.Value.Any(column => !columns.Contains(column)))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static async Task<IReadOnlyList<MoneyManagerRecurringPayment>> ReadRecurringPayments(
+        SqliteConnection connection, IReadOnlyList<SourceTransaction> transactions, LinkIndex links,
+        IReadOnlyDictionary<string, MoneyManagerCategory> categories, IReadOnlyDictionary<string, string> tags,
+        ISet<string> usedCategories, IDictionary<string, MoneyManagerTag> importedTags,
+        CancellationToken token)
+    {
+        var transactionByUid = transactions.ToDictionary(value => value.Uid, StringComparer.Ordinal);
+        var result = new Dictionary<string, MoneyManagerRecurringPayment>(StringComparer.Ordinal);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT r.uid,r.period,r.startDate,r.endDate,p.lastTransactionDate,t.uid
+            FROM reminding r
+            JOIN sync_link rp ON rp.entityType='Reminding' AND rp.entityUid=r.uid AND rp.otherType='RegularPaymentPeriod' AND rp.isRemoved=0
+            JOIN regular_payment_period p ON p.uid=rp.otherUid AND p.isRemoved=0
+            JOIN sync_link pt ON pt.entityType='RegularPaymentPeriod' AND pt.entityUid=rp.otherUid AND pt.otherType='Transaction' AND pt.isRemoved=0
+            JOIN [transaction] t ON t.uid=pt.otherUid
+            WHERE r.isRemoved=0 AND r.enabled=1 AND r.remindingType='regularPayments'
+            LIMIT 100001
+            """;
+        await using var reader = await command.ExecuteReaderAsync(token);
+        while (await reader.ReadAsync(token))
+        {
+            EnsureCapacity(result.Count);
+            var uid = ReadUid(reader, 0);
+            var period = ReadText(reader, 1, 20);
+            var start = ReadDateTimeDate(reader, 2);
+            var endsOn = ReadDateTimeDate(reader, 3, true);
+            var last = ReadDateTimeDate(reader, 4, true);
+            var transactionUid = ReadUid(reader, 5);
+            if (uid is null || period is null || start is null || transactionUid is null ||
+                !transactionByUid.TryGetValue(transactionUid, out var transaction) ||
+                !transaction.IsExpense || transaction.IsRemoved || transaction.AmountCents <= 0 ||
+                !TryMapFrequency(period, out var frequency))
+                continue;
+
+            var categoryUid = links.Category(transaction.Uid);
+            if (categoryUid is null || !categories.ContainsKey(categoryUid))
+                continue;
+
+            var nextDueOn = NextDueOn(frequency, start.Value, last, endsOn);
+            if (nextDueOn is null)
+                continue;
+
+            var tagUid = links.Tags(transaction.Uid).Where(tags.ContainsKey)
+                .OrderBy(value => value, StringComparer.Ordinal).FirstOrDefault();
+            usedCategories.Add(categoryUid);
+            if (tagUid is not null)
+            {
+                var importedTagUid = $"{tagUid}:{categoryUid}";
+                importedTags.TryAdd(importedTagUid, new MoneyManagerTag(importedTagUid, categoryUid, tags[tagUid]));
+                tagUid = importedTagUid;
+            }
+
+            result.TryAdd(uid, new MoneyManagerRecurringPayment(uid, categoryUid, tagUid,
+                transaction.AmountCents, frequency, nextDueOn.Value, transaction.Comment, endsOn));
+        }
+
+        return result.Values.ToList();
+    }
+
+    private static bool TryMapFrequency(string period, out RecurrenceFrequency frequency)
+    {
+        frequency = period switch
+        {
+            "Week" => RecurrenceFrequency.Weekly,
+            "Month" => RecurrenceFrequency.Monthly,
+            "Year" => RecurrenceFrequency.Yearly,
+            _ => default
+        };
+        return period is "Week" or "Month" or "Year";
+    }
+
+    private static DateOnly? NextDueOn(RecurrenceFrequency frequency, DateOnly start,
+        DateOnly? lastTransaction, DateOnly? endsOn)
+    {
+        var dueOn = lastTransaction ?? start;
+        var recurrence = new RecurrenceDefinition(frequency, start.Month, start.Day);
+        if (lastTransaction.HasValue)
+            dueOn = recurrence.GetNext(dueOn);
+        while (dueOn < DateOnly.FromDateTime(DateTime.Today))
+            dueOn = recurrence.GetNext(dueOn);
+        return dueOn <= endsOn.GetValueOrDefault(DateOnly.MaxValue) ? dueOn : null;
+    }
+
+    private static DateOnly? ReadDateTimeDate(SqliteDataReader reader, int ordinal, bool optional = false)
+    {
+        var text = ReadText(reader, ordinal, 40, optional);
+        if (!string.IsNullOrWhiteSpace(text))
+            return DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var value)
+                ? DateOnly.FromDateTime(value) : null;
+        return optional ? null : null;
     }
 
     private static string? ReadUid(SqliteDataReader reader, int ordinal)

@@ -14,6 +14,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<CategoriesPage>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<SettingsPage>();
+        services.AddSingleton<RecurringPaymentAutomation>();
+#if ANDROID
+        services.AddSingleton<IRecurringPaymentReminder, AndroidRecurringPaymentReminder>();
+#else
+        services.AddSingleton<IRecurringPaymentReminder, NoOpRecurringPaymentReminder>();
+#endif
         services.AddSingleton<AppShell>();
         services.AddSingleton<Func<AppShell>>(provider =>
             () => provider.GetRequiredService<AppShell>());
@@ -25,6 +31,10 @@ public static class ServiceCollectionExtensions
         services.AddTransient<TagExpensesPage>();
         services.AddTransient<ExpenseEditorViewModel>();
         services.AddTransient<ExpenseEditorPage>();
+        services.AddTransient<RecurringPaymentsViewModel>();
+        services.AddTransient<RecurringPaymentsPage>();
+        services.AddTransient<RecurringPaymentEditorViewModel>();
+        services.AddTransient<RecurringPaymentEditorPage>();
         return services;
     }
 }

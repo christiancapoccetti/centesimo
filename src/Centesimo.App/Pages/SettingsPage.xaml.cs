@@ -13,6 +13,9 @@ public partial class SettingsPage : ContentPage
         BindingContext = viewModel;
     }
 
+    private async void OnRecurringPaymentsTapped(object? sender, TappedEventArgs e) =>
+        await Shell.Current.GoToAsync(nameof(RecurringPaymentsPage));
+
     private async void OnImportClicked(object? sender, EventArgs e)
     {
         try
@@ -22,23 +25,13 @@ public partial class SettingsPage : ContentPage
                 PickerTitle = "Scegli il backup Money Manager"
             });
             if (file is null)
+            {
+                _viewModel.ClearPreview();
                 return;
+            }
 
             await using var stream = await file.OpenReadAsync();
-            var preview = await _viewModel.Preview(stream);
-            if (preview.IsFailure)
-                return;
-
-            var confirmed = await DisplayAlertAsync(
-                "Importa backup",
-                $"Verranno importate {preview.Value.CategoriesCount} categorie, " +
-                $"{preview.Value.TagsCount} tag e {preview.Value.ExpensesCount} spese. Vuoi continuare?",
-                "Importa",
-                "Annulla");
-            if (!confirmed)
-                return;
-
-            await _viewModel.Import(preview.Value);
+            await _viewModel.Preview(stream);
         }
         catch (OperationCanceledException)
         {
@@ -49,4 +42,5 @@ public partial class SettingsPage : ContentPage
             _viewModel.ShowError("Non è stato possibile aprire il backup selezionato.");
         }
     }
+    private async void OnImportPreviewClicked(object? sender, EventArgs e) => await _viewModel.ImportPreview();
 }

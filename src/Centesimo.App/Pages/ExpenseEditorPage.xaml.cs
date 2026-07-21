@@ -46,6 +46,15 @@ public partial class ExpenseEditorPage : ContentPage, IQueryAttributable
         await _viewModel.LoadTags();
     }
 
+    private async void OnCategorySelectorTapped(object? sender, object category)
+    {
+        if (category is not ExpenseEditorViewModel.CategoryOption selected)
+            return;
+
+        _viewModel.SelectedCategory = selected;
+        await _viewModel.LoadTags();
+    }
+
     private async void OnDeleteClicked(object? sender, EventArgs e)
     {
         var confirmed = await DisplayAlertAsync(

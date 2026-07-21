@@ -13,6 +13,12 @@ public sealed class RecurringPaymentService(
     IRecurringPaymentRepository recurringPayments,
     IRecurringOccurrenceProcessor occurrenceProcessor)
 {
+    public Task<Result<IReadOnlyList<RecurringPayment>>> GetAll(
+        CancellationToken cancellationToken = default) => recurringPayments.GetAll(cancellationToken);
+
+    public Task<Result<RecurringPayment?>> Get(Guid paymentId,
+        CancellationToken cancellationToken = default) => recurringPayments.Get(paymentId, cancellationToken);
+
     public async Task<Result<RecurringPayment>> Create(SaveRecurringPaymentRequest request,
         CancellationToken cancellationToken = default)
     {

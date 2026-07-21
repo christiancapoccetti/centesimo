@@ -15,12 +15,6 @@ Items are not commitments and will be prioritized after the core manual expense 
 - Support English in addition to Italian.
 - Format currency, dates, and numbers according to the selected locale.
 
-## Expense automation
-
-- Recurring payments with configurable schedules.
-- Automatic generation of due expenses.
-- Reminders for upcoming recurring payments.
-
 ## Category management
 
 - Browse and restore archived categories.

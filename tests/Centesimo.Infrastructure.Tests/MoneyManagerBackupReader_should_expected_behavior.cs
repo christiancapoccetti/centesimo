@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using Centesimo.Infrastructure;
+using Centesimo.Domain;
 using Microsoft.Data.Sqlite;
 
 namespace Centesimo.Infrastructure.Tests;
@@ -38,6 +39,45 @@ public sealed class MoneyManagerBackupReader_should_expected_behavior
 
         Assert.True(result.IsFailure);
         Assert.Equal("Import.InvalidBackup", result.Error.Code);
+    }
+
+    [Fact]
+    public async Task Read_maps_active_monthly_regular_payment_and_keeps_its_historical_occurrence()
+    {
+        await using var backup = await CreateBackup(SchemaAndData + """
+            CREATE TABLE reminding (uid TEXT PRIMARY KEY, period TEXT, transactionType TEXT, startDate TEXT, endDate TEXT, lastTransactionDate TEXT, enabled INTEGER, isRemoved INTEGER, remindingType TEXT);
+            CREATE TABLE regular_payment_period (uid TEXT PRIMARY KEY, startDate TEXT, endDate TEXT, lastTransactionDate TEXT, isRemoved INTEGER);
+            INSERT INTO reminding VALUES ('reminder-1','Month','Expense','2026-07-20','','2026-07-20',1,0,'regularPayments');
+            INSERT INTO regular_payment_period VALUES ('period-1','2026-07-20','','2026-07-20',0);
+            INSERT INTO sync_link VALUES ('Reminding','reminder-1','RegularPaymentPeriod','period-1',0);
+            """);
+
+        var result = await new MoneyManagerBackupReader().Read(backup);
+
+        Assert.True(result.IsSuccess);
+        Assert.Contains(result.Value.Expenses, value => value.SourceUid == "regular-1");
+        var payment = Assert.Single(result.Value.RecurringPaymentsOrEmpty);
+        Assert.Equal("reminder-1", payment.SourceUid);
+        Assert.Equal(RecurrenceFrequency.Monthly, payment.Frequency);
+        Assert.Equal(new DateOnly(2026, 8, 20), payment.NextDueOn);
+    }
+
+    [Fact]
+    public async Task Read_advances_past_a_regular_payment_occurrence_recorded_today()
+    {
+        var schema = SchemaAndData.Replace("2026-07-20", "2026-07-21") + """
+            CREATE TABLE reminding (uid TEXT PRIMARY KEY, period TEXT, transactionType TEXT, startDate TEXT, endDate TEXT, lastTransactionDate TEXT, enabled INTEGER, isRemoved INTEGER, remindingType TEXT);
+            CREATE TABLE regular_payment_period (uid TEXT PRIMARY KEY, startDate TEXT, endDate TEXT, lastTransactionDate TEXT, isRemoved INTEGER);
+            INSERT INTO reminding VALUES ('reminder-today','Month','Expense','2026-07-21','','2026-07-21',1,0,'regularPayments');
+            INSERT INTO regular_payment_period VALUES ('period-1','2026-07-21','','2026-07-21',0);
+            INSERT INTO sync_link VALUES ('Reminding','reminder-today','RegularPaymentPeriod','period-1',0);
+            """;
+        await using var backup = await CreateBackup(schema);
+
+        var result = await new MoneyManagerBackupReader().Read(backup);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(new DateOnly(2026, 8, 21), Assert.Single(result.Value.RecurringPaymentsOrEmpty).NextDueOn);
     }
 
     [Fact]

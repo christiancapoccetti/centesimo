@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Centesimo.App.Controls"
+             x:Class="Centesimo.App.Pages.RecurringPaymentEditorPage"
+             Shell.NavBarIsVisible="False"
+             SafeAreaEdges="All">
+    <Grid Padding="22,12,22,16" RowDefinitions="Auto,*,Auto" RowSpacing="12">
+        <Grid ColumnDefinitions="Auto,*,Auto" HeightRequest="48">
+            <Button Text="Chiudi" Style="{StaticResource TextActionButton}" Clicked="OnCloseClicked" />
+            <Label Grid.Column="1" Text="{Binding Title}" Style="{StaticResource TitleLarge}" HorizontalTextAlignment="Center" VerticalOptions="Center" />
+            <BoxView Grid.Column="2" WidthRequest="64" />
+        </Grid>
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="22" Padding="0,14,0,8">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Quanto vuoi pianificare?" Style="{StaticResource BodyMedium}" HorizontalTextAlignment="Center" />
+                    <Entry Text="{Binding Amount}" Placeholder="0,00 €" Keyboard="Numeric" FontFamily="OpenSansSemibold" FontSize="44" HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+                <BoxView HeightRequest="1" Color="{StaticResource OutlineLight}" />
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="CATEGORIA" Style="{StaticResource LabelLarge}" />
+                    <controls:CategorySelector Items="{Binding Categories}" CategoryTapped="OnCategorySelectorTapped" />
+                    <Border Style="{StaticResource FieldContainer}" IsVisible="{Binding HasTags}"><Picker ItemsSource="{Binding Tags}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedTag}" Title="Tag (facoltativo)" MinimumHeightRequest="48" /></Border>
+                </VerticalStackLayout>
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="RIPETIZIONE" Style="{StaticResource LabelLarge}" />
+                    <Border Style="{StaticResource FieldContainer}"><Picker ItemsSource="{Binding Frequencies}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedFrequency}" MinimumHeightRequest="48" /></Border>
+                    <Label Text="PROSSIMA SCADENZA" Style="{StaticResource LabelLarge}" />
+                    <Border Style="{StaticResource FieldContainer}"><DatePicker Date="{Binding NextDueOn}" MinimumHeightRequest="48" /></Border>
+                    <Grid ColumnDefinitions="*,Auto"><Label Text="FINE (FACOLTATIVA)" Style="{StaticResource LabelLarge}" VerticalOptions="Center" /><Switch Grid.Column="1" IsToggled="{Binding HasEndDate}" /></Grid>
+                    <Border Style="{StaticResource FieldContainer}"><DatePicker Date="{Binding EndsOn}" IsEnabled="{Binding CanSelectEndDate}" MinimumHeightRequest="48" /></Border>
+                </VerticalStackLayout>
+                <VerticalStackLayout Spacing="8"><Label Text="NOTE" Style="{StaticResource LabelLarge}" /><Border Style="{StaticResource FieldContainer}"><Editor Text="{Binding Note}" Placeholder="Aggiungi una nota" AutoSize="TextChanges" MinimumHeightRequest="76" MaxLength="500" /></Border></VerticalStackLayout>
+                <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" TextColor="{StaticResource ErrorLight}" />
+            </VerticalStackLayout>
+        </ScrollView>
+        <Button Grid.Row="2" Text="Salva pagamento" Command="{Binding SaveCommand}" Style="{StaticResource PrimaryActionButton}" />
+    </Grid>
+</ContentPage>

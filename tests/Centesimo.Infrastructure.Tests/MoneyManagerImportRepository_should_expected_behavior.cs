@@ -110,6 +110,28 @@ public sealed class MoneyManagerImportRepository_should_expected_behavior
         Assert.Equal(1, await database.Context.Expenses.CountAsync());
     }
     [Fact]
+    public async Task Import_and_preview_are_idempotent_for_recurring_payments()
+    {
+        using var database = new TestDatabase();
+        var repository = new MoneyManagerImportRepository(database.Context);
+        var original = CreateData();
+        var data = original with
+        {
+            RecurringPayments = [new MoneyManagerRecurringPayment("recurring-1", "category-1",
+                "tag-1:category-1", 400, RecurrenceFrequency.Monthly, new DateOnly(2026, 8, 20),
+                "Abbonamento", null)]
+        };
+
+        var first = await repository.Import(data);
+        var secondPreview = await repository.Preview(data);
+
+        Assert.Equal(1, first.Value.RecurringPaymentsAdded);
+        Assert.Equal(0, secondPreview.Value.RecurringPaymentsAdded);
+        var payment = await database.Context.RecurringPayments.SingleAsync();
+        Assert.Equal(new DateOnly(2026, 8, 20), payment.NextDueOn);
+        Assert.Equal(MoneyManagerImportIds.Create("recurring-payment", "recurring-1"), payment.RecurringPaymentId);
+    }
+    [Fact]
     public async Task Import_restores_matching_archived_categories_and_tags()
     {
         using var database = new TestDatabase();

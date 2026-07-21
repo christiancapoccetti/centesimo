@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Class="Centesimo.App.Pages.ExpenseEditorPage" Title="{Binding Title}" Shell.NavBarIsVisible="False" SafeAreaEdges="All">
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib" xmlns:controls="clr-namespace:Centesimo.App.Controls" x:Class="Centesimo.App.Pages.ExpenseEditorPage" Title="{Binding Title}" Shell.NavBarIsVisible="False" SafeAreaEdges="All">
     <Grid Padding="22,12,22,16" RowDefinitions="Auto,*,Auto" RowSpacing="12">
         <Grid ColumnDefinitions="Auto,*,Auto" HeightRequest="48">
             <Button Text="Chiudi" Style="{StaticResource TextActionButton}" Clicked="OnCancelClicked" />
@@ -18,15 +18,7 @@
                     <Label Text="DATA" Style="{StaticResource LabelLarge}" />
                     <Border Style="{StaticResource FieldContainer}"><DatePicker Date="{Binding OccurredOn}" MaximumDate="{x:Static sys:DateTime.Today}" MinimumHeightRequest="48" /></Border>
                     <Label Text="CATEGORIA" Style="{StaticResource LabelLarge}" />
-                    <FlexLayout BindableLayout.ItemsSource="{Binding Categories}" Direction="Row" Wrap="Wrap" JustifyContent="Start">
-                        <BindableLayout.ItemTemplate><DataTemplate>
-                            <Border FlexLayout.Basis="20%" HeightRequest="56" BackgroundColor="{StaticResource SurfaceContainerLight}" Stroke="{StaticResource OutlineLight}" StrokeThickness="1" StrokeShape="RoundRectangle 16" SemanticProperties.Description="{Binding Name}">
-                                <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnCategoryTapped" /></Border.GestureRecognizers>
-                                <Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True"><Setter Property="Stroke" Value="{StaticResource PrimaryLight}" /><Setter Property="StrokeThickness" Value="2" /><Setter Property="BackgroundColor" Value="{StaticResource PrimaryContainerLight}" /></DataTrigger></Border.Triggers>
-                                <Border WidthRequest="36" HeightRequest="36" Style="{StaticResource CategoryIconContainer}" BackgroundColor="{Binding Color}" HorizontalOptions="Center" VerticalOptions="Center"><Image Source="{Binding Icon, Converter={StaticResource CategoryIconSourceConverter}}" Style="{StaticResource CategoryIconImage}" /></Border>
-                            </Border>
-                        </DataTemplate></BindableLayout.ItemTemplate>
-                    </FlexLayout>
+                    <controls:CategorySelector Items="{Binding Categories}" CategoryTapped="OnCategorySelectorTapped" />
                     <Border Style="{StaticResource FieldContainer}" IsVisible="{Binding HasTags}"><Picker ItemsSource="{Binding Tags}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedTag}" Title="Tag (facoltativo)" MinimumHeightRequest="48" /></Border>
                 </VerticalStackLayout>
                 <VerticalStackLayout Spacing="8">

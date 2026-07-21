@@ -5,33 +5,43 @@
              Title="Impostazioni"
              SafeAreaEdges="All">
     <ScrollView>
-        <VerticalStackLayout Padding="20,16" Spacing="20">
+        <VerticalStackLayout Padding="22,16" Spacing="20">
             <VerticalStackLayout Spacing="2">
-                <Label Text="Impostazioni"
-                       Style="{StaticResource HeadlineLarge}"
-                       SemanticProperties.HeadingLevel="Level1" />
-                <Label Text="Gestisci i dati locali dell'app."
-                       Style="{StaticResource BodyMedium}" />
+                <Label Text="Impostazioni" Style="{StaticResource HeadlineLarge}" />
+                <Label Text="Gestisci dati e automazioni locali." Style="{StaticResource BodyMedium}" />
             </VerticalStackLayout>
-            <Border Style="{StaticResource SurfaceCard}">
-                <VerticalStackLayout Spacing="12">
-                    <Label Text="Importa da Money Manager"
-                           Style="{StaticResource TitleLarge}"
-                           SemanticProperties.HeadingLevel="Level2" />
-                    <Label Text="Scegli un backup di Money Manager. Il file non viene inviato: durante l'importazione viene usata solo una copia temporanea locale, poi eliminata. Verranno importate spese, categorie e un tag per spesa."
-                           Style="{StaticResource BodyMedium}" />
-                    <Button Text="Seleziona backup"
-                            Style="{StaticResource PrimaryActionButton}"
-                            IsEnabled="{Binding CanImport}"
-                            Clicked="OnImportClicked"
-                            SemanticProperties.Hint="Apre la selezione di un backup Money Manager" />
-                    <ActivityIndicator IsRunning="{Binding IsBusy}"
-                                       IsVisible="{Binding IsBusy}" />
-                    <Label Text="{Binding Message}"
-                           IsVisible="{Binding HasMessage}"
-                           TextColor="{Binding HasError, Converter={StaticResource ImportMessageColorConverter}}" />
+            <Label Text="AUTOMAZIONI" Style="{StaticResource LabelLarge}" TextColor="{StaticResource PrimaryLight}" />
+            <Border Style="{StaticResource SurfaceCard}" Padding="16">
+                <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnRecurringPaymentsTapped" /></Border.GestureRecognizers>
+                <Grid ColumnDefinitions="52,*" ColumnSpacing="12">
+                    <Border Style="{StaticResource CategoryIconContainer}" BackgroundColor="{StaticResource PrimaryContainerLight}"><Label Text="↻" FontSize="26" TextColor="{StaticResource PrimaryLight}" HorizontalOptions="Center" VerticalOptions="Center" /></Border>
+                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center"><Label Text="Pagamenti regolari" Style="{StaticResource TitleLarge}" /><Label Text="Gestisci scadenze e promemoria" Style="{StaticResource BodyMedium}" /></VerticalStackLayout>
+                </Grid>
+            </Border>
+            <Label Text="DATI" Style="{StaticResource LabelLarge}" TextColor="{StaticResource PrimaryLight}" />
+            <Border Style="{StaticResource SurfaceCard}" Padding="16">
+                <VerticalStackLayout Spacing="14">
+                    <Grid ColumnDefinitions="52,*" ColumnSpacing="12"><Border Style="{StaticResource CategoryIconContainer}" BackgroundColor="{StaticResource PrimaryContainerLight}"><Label Text="↓" FontSize="28" TextColor="{StaticResource PrimaryLight}" HorizontalOptions="Center" VerticalOptions="Center" /></Border><VerticalStackLayout Grid.Column="1" Spacing="2"><Label Text="Importa backup Money Manager" Style="{StaticResource TitleLarge}" /><Label Text="Importa i tuoi dati in locale. Restano privati sul dispositivo." Style="{StaticResource BodyMedium}" /></VerticalStackLayout></Grid>
+                    <Button Text="Scegli backup" Style="{StaticResource TextActionButton}" Clicked="OnImportClicked" IsEnabled="{Binding CanImport}" />
                 </VerticalStackLayout>
             </Border>
+            <Border Style="{StaticResource TonalCard}" IsVisible="{Binding HasPreview}" Padding="16">
+                <VerticalStackLayout Spacing="14">
+                    <Grid ColumnDefinitions="44,*" ColumnSpacing="10"><Border Style="{StaticResource CategoryIconContainer}" BackgroundColor="{StaticResource PrimaryContainerLight}"><Label Text="✓" FontSize="24" TextColor="{StaticResource PrimaryLight}" HorizontalOptions="Center" VerticalOptions="Center" /></Border><Label Grid.Column="1" Text="Backup analizzato" Style="{StaticResource TitleLarge}" VerticalOptions="Center" /></Grid>
+                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="6">
+                        <VerticalStackLayout><Label Text="{Binding PreviewResult.CategoriesCount}" Style="{StaticResource TitleLarge}" HorizontalTextAlignment="Center" /><Label Text="nuove categorie" Style="{StaticResource BodyMedium}" FontSize="11" HorizontalTextAlignment="Center" /></VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1"><Label Text="{Binding PreviewResult.ExpensesCount}" Style="{StaticResource TitleLarge}" HorizontalTextAlignment="Center" /><Label Text="nuove spese" Style="{StaticResource BodyMedium}" FontSize="11" HorizontalTextAlignment="Center" /></VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="2"><Label Text="{Binding PreviewResult.RecurringPaymentsCount}" Style="{StaticResource TitleLarge}" HorizontalTextAlignment="Center" /><Label Text="pagamenti regolari" Style="{StaticResource BodyMedium}" FontSize="11" HorizontalTextAlignment="Center" /></VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="3"><Label Text="{Binding PreviewResult.ExistingItemsCount}" Style="{StaticResource TitleLarge}" HorizontalTextAlignment="Center" /><Label Text="già presenti" Style="{StaticResource BodyMedium}" FontSize="11" HorizontalTextAlignment="Center" /></VerticalStackLayout>
+                    </Grid>
+                    <Button Text="Importa elementi nuovi" Style="{StaticResource PrimaryActionButton}" Clicked="OnImportPreviewClicked" IsEnabled="{Binding CanImport}" />
+                </VerticalStackLayout>
+            </Border>
+            <Border Style="{StaticResource SurfaceCard}" Padding="14"><HorizontalStackLayout Spacing="12"><Label Text="ⓘ" FontSize="22" TextColor="{StaticResource PrimaryLight}" /><Label Text="Gli elementi già presenti non vengono duplicati." Style="{StaticResource BodyMedium}" VerticalOptions="Center" /></HorizontalStackLayout></Border>
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            <Label Text="{Binding Message}" IsVisible="{Binding HasMessage}" TextColor="{Binding HasError, Converter={StaticResource ImportMessageColorConverter}}" />
+            <Label Text="APP" Style="{StaticResource LabelLarge}" TextColor="{StaticResource PrimaryLight}" />
+            <Border Style="{StaticResource SurfaceCard}" Padding="16"><Grid ColumnDefinitions="*,Auto"><Label Text="Versione 1.0" Style="{StaticResource BodyMedium}" /><Label Grid.Column="1" Text="›" Style="{StaticResource TitleLarge}" TextColor="{StaticResource PrimaryLight}" /></Grid></Border>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
