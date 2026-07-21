@@ -72,7 +72,6 @@ public partial class TodayPage : ContentPage
         {
             if (!_modelProvisioner.IsAvailable)
             {
-                _viewModel.IsSpeechSheetVisible = true;
                 _viewModel.IsSpeechProcessing = true;
                 _viewModel.SpeechTranscription = "Preparazione del riconoscimento vocale…";
                 var progress = new Progress<double>(value => _viewModel.SpeechTranscription = $"Preparazione del modello: {value:P0}");
@@ -81,6 +80,7 @@ public partial class TodayPage : ContentPage
                 if (provision.IsFailure)
                 {
                     _viewModel.SpeechErrorMessage = provision.Error.Message;
+                    _viewModel.IsSpeechSheetVisible = true;
                     return;
                 }
             }
@@ -95,10 +95,10 @@ public partial class TodayPage : ContentPage
 
             var result = await _speechDraftService.Start();
             _viewModel.SpeechErrorMessage = result.IsFailure ? result.Error.Message : "";
-            _viewModel.IsSpeechSheetVisible = true;
+            _viewModel.IsSpeechSheetVisible = result.IsFailure;
             _viewModel.IsSpeechListening = result.IsSuccess;
             _viewModel.IsSpeechProcessing = false;
-            _viewModel.SpeechTranscription = "Parla ora, poi premi Ferma registrazione.";
+            _viewModel.SpeechTranscription = "Tieni premuto il microfono e rilascia per elaborare.";
         }
         catch
         {
@@ -113,6 +113,7 @@ public partial class TodayPage : ContentPage
         {
             _viewModel.IsSpeechListening = false;
             _viewModel.IsSpeechProcessing = true;
+            _viewModel.IsSpeechSheetVisible = true;
             var result = await _speechDraftService.StopAndPrepare();
             _viewModel.IsSpeechProcessing = false;
             if (result.IsFailure)
