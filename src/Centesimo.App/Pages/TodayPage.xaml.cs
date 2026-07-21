@@ -51,9 +51,6 @@ public partial class TodayPage : ContentPage
     private async void OnNextMonthClicked(object? sender, EventArgs e) =>
         await _viewModel.NextMonth();
 
-    private async void OnOverviewTapped(object? sender, TappedEventArgs e) =>
-        await _viewModel.ToggleOverview();
-
     private async void OnExpenseClicked(object? sender, EventArgs e)
     {
         if (sender is not Button { CommandParameter: TodayViewModel.MonthlyExpenseItemViewModel expense })

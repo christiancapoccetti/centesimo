@@ -13,7 +13,17 @@ public sealed record YearlyCategoryOverview(
 public sealed record YearlyOverview(
     long SpentCents,
     long? TotalBudgetCents,
-    IReadOnlyList<YearlyCategoryOverview> Categories);
+    IReadOnlyList<YearlyCategoryOverview> Categories,
+    IReadOnlyList<YearlyExpenseOverview> Expenses);
+
+public sealed record YearlyExpenseOverview(
+    Guid ExpenseId,
+    string CategoryName,
+    string CategoryIcon,
+    string CategoryColor,
+    long AmountCents,
+    DateOnly OccurredOn,
+    string Note);
 
 public sealed class YearlyOverviewService(ICategoryRepository categories, IExpenseRepository expenses)
 {
@@ -53,9 +63,30 @@ public sealed class YearlyOverviewService(ICategoryRepository categories, IExpen
             .Where(category => category.MonthlyBudget.HasValue)
             .Select(category => category.MonthlyBudget!.Value.Cents * 12)
             .ToList();
+        var categoryLookup = categoryResult.Value.ToDictionary(category => category.CategoryId);
+        var expenseOverview = yearlyExpenses
+            .OrderByDescending(expense => expense.Amount.Cents)
+            .ThenByDescending(expense => expense.OccurredOn)
+            .ThenByDescending(expense => expense.ExpenseId)
+            .Take(10)
+            .Select(expense => ToOverview(expense, categoryLookup))
+            .ToList();
         return Result<YearlyOverview>.Success(new YearlyOverview(
             yearlyExpenses.Sum(expense => expense.Amount.Cents),
             configuredBudgets.Count == 0 ? null : configuredBudgets.Sum(),
-            categoryOverview));
+            categoryOverview,
+            expenseOverview));
+    }
+
+    private static YearlyExpenseOverview ToOverview(
+        Expense expense,
+        IReadOnlyDictionary<Guid, Category> categories)
+    {
+        if (!categories.TryGetValue(expense.CategoryId, out var category))
+            return new YearlyExpenseOverview(expense.ExpenseId, "Categoria non disponibile", "more",
+                "#6F7975", expense.Amount.Cents, expense.OccurredOn, expense.Note);
+
+        return new YearlyExpenseOverview(expense.ExpenseId, category.Name, category.Icon,
+            category.Color, expense.Amount.Cents, expense.OccurredOn, expense.Note);
     }
 }

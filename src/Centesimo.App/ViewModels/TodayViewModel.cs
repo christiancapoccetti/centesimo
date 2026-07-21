@@ -6,8 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Centesimo.App.ViewModels;
 
-public sealed class TodayViewModel(IServiceScopeFactory scopeFactory) : ObservableObject
+public sealed class TodayViewModel : ObservableObject
 {
+    private readonly IServiceScopeFactory _scopeFactory;
     private static readonly CultureInfo ItalianCulture = CultureInfo.GetCultureInfo("it-IT");
     private DateOnly _selectedMonth = CurrentMonth;
     private bool _isYearlyOverview;
@@ -27,10 +28,17 @@ public sealed class TodayViewModel(IServiceScopeFactory scopeFactory) : Observab
     private string _speechTranscription = "Parla ora, poi premi Ferma registrazione.";
     private string _speechErrorMessage = "";
 
+    public TodayViewModel(IServiceScopeFactory scopeFactory)
+    {
+        _scopeFactory = scopeFactory;
+        ToggleOverviewCommand = new AsyncCommand(ToggleOverview);
+    }
+
     private static DateOnly CurrentMonth => new(DateTime.Today.Year, DateTime.Today.Month, 1);
 
     public ObservableCollection<MonthlyCategoryItemViewModel> Categories { get; } = [];
     public ObservableCollection<MonthlyExpenseItemViewModel> Expenses { get; } = [];
+    public AsyncCommand ToggleOverviewCommand { get; }
     public bool IsLoading { get => _isLoading; private set => SetProperty(ref _isLoading, value); }
     public int SelectedYear => _selectedMonth.Year;
     public int SelectedMonth => _selectedMonth.Month;
@@ -43,15 +51,21 @@ public sealed class TodayViewModel(IServiceScopeFactory scopeFactory) : Observab
         : _selectedMonth == CurrentMonth
         ? "Questo mese"
         : FormatMonth(_selectedMonth);
-    public string SummaryLabel => IsYearlyOverview ? "QUESTO ANNO" : "QUESTO MESE";
+    public string SummaryLabel => IsYearlyOverview
+        ? _selectedMonth.Year == DateTime.Today.Year ? "QUESTO ANNO" : $"ANNO {_selectedMonth.Year}"
+        : "QUESTO MESE";
     public string HomeSubtitle => IsYearlyOverview
         ? "Ecco come sta andando il tuo anno."
         : "Ecco come sta andando il tuo mese.";
-    public bool IsExpenseSectionVisible => !IsYearlyOverview;
-    public string ExpenseSectionTitle => _selectedMonth == CurrentMonth
+    public bool IsExpenseSectionVisible => true;
+    public string ExpenseSectionTitle => IsYearlyOverview
+        ? "Le spese più alte dell'anno"
+        : _selectedMonth == CurrentMonth
         ? "Ultime spese"
         : $"Ultime spese di {_selectedMonth.ToDateTime(TimeOnly.MinValue).ToString("MMMM", ItalianCulture)}";
-    public string EmptyMessage => $"Nessuna spesa in {FormatMonth(_selectedMonth)}.";
+    public string EmptyMessage => IsYearlyOverview
+        ? $"Nessuna spesa nel {_selectedMonth.Year}."
+        : $"Nessuna spesa in {FormatMonth(_selectedMonth)}.";
     public string ErrorMessage
     {
         get => _errorMessage;
@@ -133,7 +147,7 @@ public sealed class TodayViewModel(IServiceScopeFactory scopeFactory) : Observab
         ErrorMessage = "";
         NotifyNavigationState();
         Result<MonthlyOverview> result;
-        using (var scope = scopeFactory.CreateScope())
+        using (var scope = _scopeFactory.CreateScope())
         {
             var overviewService = scope.ServiceProvider.GetRequiredService<MonthlyOverviewService>();
             result = await overviewService.Get(month.Year, month.Month);
@@ -164,7 +178,7 @@ public sealed class TodayViewModel(IServiceScopeFactory scopeFactory) : Observab
         ErrorMessage = "";
         NotifyNavigationState();
         Result<YearlyOverview> result;
-        using (var scope = scopeFactory.CreateScope())
+        using (var scope = _scopeFactory.CreateScope())
         {
             var overviewService = scope.ServiceProvider.GetRequiredService<YearlyOverviewService>();
             result = await overviewService.Get(year.Year);
@@ -207,6 +221,8 @@ public sealed class TodayViewModel(IServiceScopeFactory scopeFactory) : Observab
         BudgetProgress = Progress(overview.SpentCents, overview.TotalBudgetCents);
         foreach (var category in overview.Categories)
             Categories.Add(MonthlyCategoryItemViewModel.From(category));
+        foreach (var expense in overview.Expenses)
+            Expenses.Add(MonthlyExpenseItemViewModel.From(expense));
     }
 
     private void NotifyState()
@@ -285,6 +301,16 @@ public sealed class TodayViewModel(IServiceScopeFactory scopeFactory) : Observab
         string Date, string Note, bool HasNote)
     {
         public static MonthlyExpenseItemViewModel From(MonthlyExpenseOverview expense) => new(
+            expense.ExpenseId,
+            expense.CategoryName,
+            expense.CategoryIcon,
+            expense.CategoryColor,
+            FormatMoney(expense.AmountCents),
+            expense.OccurredOn.ToDateTime(TimeOnly.MinValue).ToString("ddd d MMM", ItalianCulture),
+            expense.Note,
+            expense.Note.HasValue());
+
+        public static MonthlyExpenseItemViewModel From(YearlyExpenseOverview expense) => new(
             expense.ExpenseId,
             expense.CategoryName,
             expense.CategoryIcon,
