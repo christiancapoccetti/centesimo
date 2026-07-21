@@ -7,6 +7,8 @@ public partial class TodayPage : ContentPage
     private readonly TodayViewModel _viewModel;
     private readonly SpeechExpenseDraftService _speechDraftService;
     private readonly IItalianSpeechModelProvisioner _modelProvisioner;
+    private Task<Result>? _speechStart;
+    private int _speechSession;
 
     public TodayPage(TodayViewModel viewModel, SpeechExpenseDraftService speechDraftService, IItalianSpeechModelProvisioner modelProvisioner)
     {
@@ -66,7 +68,13 @@ public partial class TodayPage : ContentPage
     private async void OnAddExpenseClicked(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync(nameof(ExpenseEditorPage));
 
-    private async void OnSpeechPressed(object? sender, EventArgs e)
+    private void OnSpeechPressed(object? sender, EventArgs e)
+    {
+        var session = ++_speechSession;
+        _speechStart = StartSpeech(session);
+    }
+
+    private async Task<Result> StartSpeech(int session)
     {
         try
         {
@@ -79,31 +87,31 @@ public partial class TodayPage : ContentPage
                 _viewModel.IsSpeechProcessing = false;
                 if (provision.IsFailure)
                 {
-                    _viewModel.SpeechErrorMessage = provision.Error.Message;
-                    _viewModel.IsSpeechSheetVisible = true;
-                    return;
+                    return Result.Failure(provision.Error);
                 }
             }
 
             var permission = await Permissions.RequestAsync<Permissions.Microphone>();
             if (permission != PermissionStatus.Granted)
-            {
-                _viewModel.SpeechErrorMessage = "Consenti l'accesso al microfono per usare i comandi vocali.";
-                _viewModel.IsSpeechSheetVisible = true;
-                return;
-            }
+                return Result.Failure(new Centesimo.Application.Error("Speech.MicrophoneDenied", "Consenti l'accesso al microfono per usare i comandi vocali."));
 
             var result = await _speechDraftService.Start();
-            _viewModel.SpeechErrorMessage = result.IsFailure ? result.Error.Message : "";
-            _viewModel.IsSpeechSheetVisible = result.IsFailure;
-            _viewModel.IsSpeechListening = result.IsSuccess;
+            if (session != _speechSession || result.IsFailure)
+            {
+                if (result.IsSuccess)
+                    await _speechDraftService.Cancel();
+                return result;
+            }
+
+            _viewModel.SpeechErrorMessage = "";
+            _viewModel.IsSpeechListening = true;
             _viewModel.IsSpeechProcessing = false;
             _viewModel.SpeechTranscription = "Tieni premuto il microfono e rilascia per elaborare.";
+            return result;
         }
         catch
         {
-            _viewModel.SpeechErrorMessage = "Non riesco ad avviare il riconoscimento vocale.";
-            _viewModel.IsSpeechSheetVisible = true;
+            return Result.Failure(new Centesimo.Application.Error("Speech.StartFailed", "Non riesco ad avviare il riconoscimento vocale."));
         }
     }
 
@@ -111,9 +119,21 @@ public partial class TodayPage : ContentPage
     {
         try
         {
+            var start = _speechStart;
+            if (start is null)
+                return;
+
+            var startResult = await start;
             _viewModel.IsSpeechListening = false;
             _viewModel.IsSpeechProcessing = true;
             _viewModel.IsSpeechSheetVisible = true;
+            if (startResult.IsFailure)
+            {
+                _viewModel.IsSpeechProcessing = false;
+                _viewModel.SpeechErrorMessage = $"Non ho capito bene. {startResult.Error.Message}";
+                return;
+            }
+
             var result = await _speechDraftService.StopAndPrepare();
             _viewModel.IsSpeechProcessing = false;
             if (result.IsFailure)
@@ -132,6 +152,7 @@ public partial class TodayPage : ContentPage
         }
         finally
         {
+            _speechStart = null;
             _viewModel.IsSpeechListening = false;
             if (_viewModel.HasSpeechError)
                 _viewModel.IsSpeechSheetVisible = true;
