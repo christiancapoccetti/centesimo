@@ -42,7 +42,7 @@ public sealed partial class ExpenseSpeechCommandParser
     [GeneratedRegex(@"(?<amount>(?:\d+|[a-zàèéìòù]+)\s*(?:euro|eur|€)\s+e\s+(?:\d+|[a-zàèéìòù]+))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex MoneyWithCentsPattern();
 
-    [GeneratedRegex(@"(?:(?:alla|nella|in)\s+categoria|categoria|spesa\s+(?:su|sul|sullo|sulla|sui|sugli|sulle|in|nel|nello|nella|nei|negli|nelle)|(?:su|sul|sullo|sulla|sui|sugli|sulle|in|nel|nello|nella|nei|negli|nelle))\s+(?<category>.+?)(?=\s+(?:sotto\s+)?tag\s+|\s+con\s+nota\s+|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"(?:(?:alla|nella|in)\s+categoria|categoria|spesa\s+(?:su|sul|sullo|sulla|sui|sugli|sulle|in|nel|nello|nella|nei|negli|nelle)|(?:su|sul|sullo|sulla|sui|sugli|sulle|in|nel|nello|nella|nei|negli|nelle))\s+(?<category>.+?)(?=\s+(?:(?:sotto|con)\s+)?tag\s+|\s+con\s+nota\s+|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex CategoryPattern();
 
     [GeneratedRegex(@"(?:sotto\s+)?tag\s+(?<tag>.+?)(?=\s+con\s+nota\s+|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]

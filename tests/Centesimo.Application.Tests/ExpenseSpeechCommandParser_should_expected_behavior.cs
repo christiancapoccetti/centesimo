@@ -68,4 +68,15 @@ public sealed class ExpenseSpeechCommandParser_should_expected_behavior
         Assert.Equal(50m, result.Value.Amount);
         Assert.Equal("lavoro", result.Value.CategoryName);
     }
+
+    [Fact]
+    public void Parse_category_and_tag_separated_by_con_tag()
+    {
+        var result = _parser.Parse("inserisci cinque euro su vacanze con tag caselli");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(5m, result.Value.Amount);
+        Assert.Equal("vacanze", result.Value.CategoryName);
+        Assert.Equal("caselli", result.Value.TagName);
+    }
 }
