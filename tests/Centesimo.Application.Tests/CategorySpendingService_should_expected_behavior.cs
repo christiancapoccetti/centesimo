@@ -56,4 +56,33 @@ public sealed class CategorySpendingService_should_expected_behavior
         Assert.True(result.IsFailure);
         Assert.Equal(ApplicationErrors.CategoryNotFound, result.Error);
     }
+
+    [Fact]
+    public async Task Should_aggregate_the_full_year_and_annualize_the_budget()
+    {
+        var categories = new FakeCategoryRepository();
+        var tags = new FakeTagRepository();
+        var expenses = new FakeExpenseRepository();
+        var food = new Category(Guid.NewGuid(), "Food", "cart", "#176B5B", new Money(2000));
+        var market = new Tag(Guid.NewGuid(), food.CategoryId, "Market");
+        categories.Items.Add(food);
+        tags.Items.Add(market);
+        expenses.Items.AddRange([
+            new Expense(Guid.NewGuid(), food.CategoryId, new Money(900), new DateOnly(2026, 1, 10), market.TagId),
+            new Expense(Guid.NewGuid(), food.CategoryId, new Money(700), new DateOnly(2026, 12, 12), market.TagId),
+            new Expense(Guid.NewGuid(), food.CategoryId, new Money(500), new DateOnly(2025, 12, 31), market.TagId),
+            new Expense(Guid.NewGuid(), food.CategoryId, new Money(600), new DateOnly(2027, 1, 1), market.TagId)
+        ]);
+
+        var result = await new CategorySpendingService(categories, tags, expenses)
+            .Get(food.CategoryId, 2026, 7, CategorySpendingPeriod.Year);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(CategorySpendingPeriod.Year, result.Value.Period);
+        Assert.Equal(1600, result.Value.SpentCents);
+        Assert.Equal(24000, result.Value.BudgetCents);
+        var tag = Assert.Single(result.Value.Tags);
+        Assert.Equal("Market", tag.Name);
+        Assert.Equal(2, tag.Expenses.Count);
+    }
 }

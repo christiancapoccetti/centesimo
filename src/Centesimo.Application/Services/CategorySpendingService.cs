@@ -8,13 +8,16 @@ public sealed record TagSpendingOverview(Guid? TagId, string Name, long SpentCen
     IReadOnlyList<CategoryExpenseOverview> Expenses);
 
 public sealed record CategorySpendingOverview(Guid CategoryId, string CategoryName, string CategoryIcon,
-    string CategoryColor, int Year, int Month, long SpentCents, long? BudgetCents,
+    string CategoryColor, int Year, int Month, CategorySpendingPeriod Period, long SpentCents, long? BudgetCents,
     IReadOnlyList<TagSpendingOverview> Tags);
+
+public enum CategorySpendingPeriod { Month, Year }
 
 public sealed class CategorySpendingService(ICategoryRepository categories, ITagRepository tags,
     IExpenseRepository expenses)
 {
     public async Task<Result<CategorySpendingOverview>> Get(Guid categoryId, int year, int month,
+        CategorySpendingPeriod period = CategorySpendingPeriod.Month,
         CancellationToken cancellationToken = default)
     {
         var categoryResult = await categories.Get(categoryId, cancellationToken);
@@ -24,13 +27,17 @@ public sealed class CategorySpendingService(ICategoryRepository categories, ITag
         if (categoryResult.Value is null)
             return Result<CategorySpendingOverview>.Failure(ApplicationErrors.CategoryNotFound);
 
-        var monthStart = new DateOnly(year, month, 1);
-        var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+        var from = period == CategorySpendingPeriod.Year
+            ? new DateOnly(year, 1, 1)
+            : new DateOnly(year, month, 1);
+        var to = period == CategorySpendingPeriod.Year
+            ? new DateOnly(year, 12, 31)
+            : from.AddMonths(1).AddDays(-1);
         var tagResult = await tags.GetByCategory(categoryId, cancellationToken);
         if (tagResult.IsFailure)
             return Result<CategorySpendingOverview>.Failure(tagResult.Error);
 
-        var expenseResult = await expenses.GetByCategoryBetween(categoryId, monthStart, monthEnd, cancellationToken);
+        var expenseResult = await expenses.GetByCategoryBetween(categoryId, from, to, cancellationToken);
         if (expenseResult.IsFailure)
             return Result<CategorySpendingOverview>.Failure(expenseResult.Error);
 
@@ -57,8 +64,11 @@ public sealed class CategorySpendingService(ICategoryRepository categories, ITag
             category.Color,
             year,
             month,
+            period,
             categoryExpenses.Sum(expense => expense.Amount.Cents),
-            category.MonthlyBudget?.Cents,
+            category.MonthlyBudget.HasValue
+                ? period == CategorySpendingPeriod.Year ? category.MonthlyBudget.Value.Cents * 12 : category.MonthlyBudget.Value.Cents
+                : null,
             spendingByTag));
     }
 

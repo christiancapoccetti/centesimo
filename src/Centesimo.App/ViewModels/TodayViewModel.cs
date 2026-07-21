@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using Centesimo.App.Controls;
 using Centesimo.Application;
 using Centesimo.Domain;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,8 +37,7 @@ public sealed class TodayViewModel : ObservableObject
 
     private static DateOnly CurrentMonth => new(DateTime.Today.Year, DateTime.Today.Month, 1);
 
-    public ObservableCollection<MonthlyCategoryItemViewModel> Categories { get; } = [];
-    public ObservableCollection<MonthlyExpenseItemViewModel> Expenses { get; } = [];
+    public ObservableCollection<CategoryBreakdownItemViewModel> Categories { get; } = [];
     public AsyncCommand ToggleOverviewCommand { get; }
     public bool IsLoading { get => _isLoading; private set => SetProperty(ref _isLoading, value); }
     public int SelectedYear => _selectedMonth.Year;
@@ -57,15 +57,6 @@ public sealed class TodayViewModel : ObservableObject
     public string HomeSubtitle => IsYearlyOverview
         ? "Ecco come sta andando il tuo anno."
         : "Ecco come sta andando il tuo mese.";
-    public bool IsExpenseSectionVisible => true;
-    public string ExpenseSectionTitle => IsYearlyOverview
-        ? "Le spese più alte dell'anno"
-        : _selectedMonth == CurrentMonth
-        ? "Ultime spese"
-        : $"Ultime spese di {_selectedMonth.ToDateTime(TimeOnly.MinValue).ToString("MMMM", ItalianCulture)}";
-    public string EmptyMessage => IsYearlyOverview
-        ? $"Nessuna spesa nel {_selectedMonth.Year}."
-        : $"Nessuna spesa in {FormatMonth(_selectedMonth)}.";
     public string ErrorMessage
     {
         get => _errorMessage;
@@ -77,8 +68,6 @@ public sealed class TodayViewModel : ObservableObject
     }
     public bool HasError => ErrorMessage.HasValue();
     public bool HasCategories => Categories.Count > 0;
-    public bool HasExpenses => Expenses.Count > 0;
-    public bool IsExpenseEmpty => !IsLoading && !HasError && !HasExpenses;
     public bool CanGoPrevious => !IsLoading;
     public bool CanGoNext => !IsLoading && (IsYearlyOverview
         ? _selectedMonth.Year < DateTime.Today.Year
@@ -153,7 +142,6 @@ public sealed class TodayViewModel : ObservableObject
             result = await overviewService.Get(month.Year, month.Month);
         }
         Categories.Clear();
-        Expenses.Clear();
         if (result.IsFailure)
         {
             MonthlyTotal = FormatMoney(0);
@@ -184,7 +172,6 @@ public sealed class TodayViewModel : ObservableObject
             result = await overviewService.Get(year.Year);
         }
         Categories.Clear();
-        Expenses.Clear();
         if (result.IsFailure)
         {
             MonthlyTotal = FormatMoney(0);
@@ -207,9 +194,7 @@ public sealed class TodayViewModel : ObservableObject
             : "Nessun budget impostato";
         BudgetProgress = Progress(overview.SpentCents, overview.TotalBudgetCents);
         foreach (var category in overview.Categories)
-            Categories.Add(MonthlyCategoryItemViewModel.From(category));
-        foreach (var expense in overview.Expenses)
-            Expenses.Add(MonthlyExpenseItemViewModel.From(expense));
+            Categories.Add(ToCategoryItem(category, true));
     }
 
     private void Apply(YearlyOverview overview)
@@ -220,23 +205,16 @@ public sealed class TodayViewModel : ObservableObject
             : "Nessun budget impostato";
         BudgetProgress = Progress(overview.SpentCents, overview.TotalBudgetCents);
         foreach (var category in overview.Categories)
-            Categories.Add(MonthlyCategoryItemViewModel.From(category));
-        foreach (var expense in overview.Expenses)
-            Expenses.Add(MonthlyExpenseItemViewModel.From(expense));
+            Categories.Add(ToCategoryItem(category, true));
     }
 
     private void NotifyState()
     {
         OnPropertyChanged(nameof(HasError));
         OnPropertyChanged(nameof(HasCategories));
-        OnPropertyChanged(nameof(HasExpenses));
-        OnPropertyChanged(nameof(IsExpenseEmpty));
         OnPropertyChanged(nameof(MonthTitle));
         OnPropertyChanged(nameof(SummaryLabel));
         OnPropertyChanged(nameof(HomeSubtitle));
-        OnPropertyChanged(nameof(IsExpenseSectionVisible));
-        OnPropertyChanged(nameof(ExpenseSectionTitle));
-        OnPropertyChanged(nameof(EmptyMessage));
         OnPropertyChanged(nameof(SelectedYear));
         OnPropertyChanged(nameof(SelectedMonth));
         NotifyNavigationState();
@@ -257,11 +235,8 @@ public sealed class TodayViewModel : ObservableObject
     private static string FormatMonth(DateOnly month) =>
         month.ToDateTime(TimeOnly.MinValue).ToString("MMMM yyyy", ItalianCulture);
 
-    public sealed record MonthlyCategoryItemViewModel(
-        Guid CategoryId, string Name, string Icon, string Color, string AmountSummary, double Progress,
-        bool IsOverBudget, string CardColor, string StatusLabel)
-    {
-        public static MonthlyCategoryItemViewModel From(MonthlyCategoryOverview category) => new(
+    private static CategoryBreakdownItemViewModel ToCategoryItem(MonthlyCategoryOverview category, bool isActionable) =>
+        new(
             category.CategoryId,
             category.Name,
             category.Icon,
@@ -269,16 +244,15 @@ public sealed class TodayViewModel : ObservableObject
             category.BudgetCents.HasValue
                 ? $"{FormatMoney(category.SpentCents)} su {FormatMoney(category.BudgetCents.Value)}"
                 : $"{FormatMoney(category.SpentCents)} · Nessun budget",
-            TodayViewModel.Progress(category.SpentCents, category.BudgetCents),
-            category.BudgetCents.HasValue && category.SpentCents > category.BudgetCents.Value,
-            category.BudgetCents.HasValue && category.SpentCents > category.BudgetCents.Value
-                ? "#FFE8E6"
-                : "#FFFFFF",
+            "Budget mensile",
             category.BudgetCents.HasValue && category.SpentCents > category.BudgetCents.Value
                 ? "Budget superato"
-                : "");
+                : "",
+            Progress(category.SpentCents, category.BudgetCents),
+            isActionable);
 
-        public static MonthlyCategoryItemViewModel From(YearlyCategoryOverview category) => new(
+    private static CategoryBreakdownItemViewModel ToCategoryItem(YearlyCategoryOverview category, bool isActionable) =>
+        new(
             category.CategoryId,
             category.Name,
             category.Icon,
@@ -286,38 +260,10 @@ public sealed class TodayViewModel : ObservableObject
             category.BudgetCents.HasValue
                 ? $"{FormatMoney(category.SpentCents)} su {FormatMoney(category.BudgetCents.Value)}"
                 : $"{FormatMoney(category.SpentCents)} · Nessun budget",
-            TodayViewModel.Progress(category.SpentCents, category.BudgetCents),
-            category.BudgetCents.HasValue && category.SpentCents > category.BudgetCents.Value,
-            category.BudgetCents.HasValue && category.SpentCents > category.BudgetCents.Value
-                ? "#FFE8E6"
-                : "#FFFFFF",
+            "Budget annuale",
             category.BudgetCents.HasValue && category.SpentCents > category.BudgetCents.Value
                 ? "Budget superato"
-                : "");
-    }
-
-    public sealed record MonthlyExpenseItemViewModel(
-        Guid ExpenseId, string CategoryName, string Icon, string Color, string Amount,
-        string Date, string Note, bool HasNote)
-    {
-        public static MonthlyExpenseItemViewModel From(MonthlyExpenseOverview expense) => new(
-            expense.ExpenseId,
-            expense.CategoryName,
-            expense.CategoryIcon,
-            expense.CategoryColor,
-            FormatMoney(expense.AmountCents),
-            expense.OccurredOn.ToDateTime(TimeOnly.MinValue).ToString("ddd d MMM", ItalianCulture),
-            expense.Note,
-            expense.Note.HasValue());
-
-        public static MonthlyExpenseItemViewModel From(YearlyExpenseOverview expense) => new(
-            expense.ExpenseId,
-            expense.CategoryName,
-            expense.CategoryIcon,
-            expense.CategoryColor,
-            FormatMoney(expense.AmountCents),
-            expense.OccurredOn.ToDateTime(TimeOnly.MinValue).ToString("ddd d MMM", ItalianCulture),
-            expense.Note,
-            expense.Note.HasValue());
-    }
+                : "",
+            Progress(category.SpentCents, category.BudgetCents),
+            isActionable);
 }

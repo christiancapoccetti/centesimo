@@ -11,6 +11,7 @@ public sealed class CategorySpendingViewModel(CategorySpendingService spendingSe
     private Guid _categoryId;
     private int _year;
     private int _month;
+    private CategorySpendingPeriod _period;
     private bool _isLoading;
     private string _title = "Dettaglio categoria";
     private string _monthTitle = "";
@@ -25,6 +26,7 @@ public sealed class CategorySpendingViewModel(CategorySpendingService spendingSe
     public Guid CategoryId => _categoryId;
     public int Year => _year;
     public int Month => _month;
+    public bool IsYearly => _period == CategorySpendingPeriod.Year;
     public ObservableCollection<TagSpendingItemViewModel> Tags { get; } = [];
     public bool IsLoading { get => _isLoading; private set => SetProperty(ref _isLoading, value); }
     public string Title { get => _title; private set => SetProperty(ref _title, value); }
@@ -50,11 +52,12 @@ public sealed class CategorySpendingViewModel(CategorySpendingService spendingSe
     public bool HasTags => Tags.Count > 0;
     public bool IsEmpty => !IsLoading && !HasError && !HasTags;
 
-    public void Initialize(Guid categoryId, int year, int month)
+    public void Initialize(Guid categoryId, int year, int month, CategorySpendingPeriod period = CategorySpendingPeriod.Month)
     {
         _categoryId = categoryId;
         _year = year;
         _month = month;
+        _period = period;
     }
 
     public async Task Load()
@@ -65,7 +68,7 @@ public sealed class CategorySpendingViewModel(CategorySpendingService spendingSe
         IsLoading = true;
         ErrorMessage = "";
         Tags.Clear();
-        var result = await spendingService.Get(_categoryId, _year, _month);
+        var result = await spendingService.Get(_categoryId, _year, _month, _period);
         if (result.IsFailure)
             ErrorMessage = result.Error.Message;
         else
@@ -86,11 +89,13 @@ public sealed class CategorySpendingViewModel(CategorySpendingService spendingSe
             : "Nessun budget impostato";
         BudgetProgress = Progress(overview.SpentCents, overview.BudgetCents);
         IsOverBudget = overview.BudgetCents.HasValue && overview.SpentCents > overview.BudgetCents.Value;
-        MonthTitle = new DateOnly(overview.Year, overview.Month, 1)
-            .ToDateTime(TimeOnly.MinValue)
-            .ToString("MMMM yyyy", ItalianCulture);
+        MonthTitle = overview.Period == CategorySpendingPeriod.Year
+            ? $"Anno {overview.Year}"
+            : new DateOnly(overview.Year, overview.Month, 1)
+                .ToDateTime(TimeOnly.MinValue)
+                .ToString("MMMM yyyy", ItalianCulture);
         foreach (var tag in overview.Tags)
-            Tags.Add(TagSpendingItemViewModel.From(tag));
+            Tags.Add(TagSpendingItemViewModel.From(tag, overview.Period == CategorySpendingPeriod.Month));
     }
 
     private void NotifyState()
@@ -107,12 +112,13 @@ public sealed class CategorySpendingViewModel(CategorySpendingService spendingSe
     private static double Progress(long spent, long? budget) =>
         budget > 0 ? Math.Min((double)spent / budget.Value, 1) : 0;
 
-    public sealed record TagSpendingItemViewModel(Guid? TagId, string Name, string Total, string CountText)
+    public sealed record TagSpendingItemViewModel(Guid? TagId, string Name, string Total, string CountText, bool IsActionable)
     {
-        public static TagSpendingItemViewModel From(TagSpendingOverview tag) => new(
+        public static TagSpendingItemViewModel From(TagSpendingOverview tag, bool isActionable) => new(
             tag.TagId,
             tag.Name,
             FormatMoney(tag.SpentCents),
-            tag.Expenses.Count == 1 ? "1 spesa" : $"{tag.Expenses.Count} spese");
+            tag.Expenses.Count == 1 ? "1 spesa" : $"{tag.Expenses.Count} spese",
+            isActionable);
     }
 }

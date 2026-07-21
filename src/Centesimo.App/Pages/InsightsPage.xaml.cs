@@ -1,4 +1,5 @@
 using Centesimo.App.ViewModels;
+using Centesimo.App.Controls;
 namespace Centesimo.App.Pages;
 public partial class InsightsPage : ContentPage
 {
@@ -37,11 +38,11 @@ public partial class InsightsPage : ContentPage
         await Shell.Current.GoToAsync($"{nameof(CategorySpendingPage)}?categoryId={insight.CategoryId}&year={DateTime.Today.Year}&month={DateTime.Today.Month}");
     }
 
-    private async void OnCategoryClicked(object? sender, EventArgs e)
+    private async void OnCategoryClicked(object? sender, CategoryBreakdownItemClickedEventArgs e)
     {
-        if (sender is not Button { CommandParameter: InsightsViewModel.InsightCategoryViewModel category } || !_viewModel.IsMonthly)
+        if (!_viewModel.IsMonthly)
             return;
 
-        await Shell.Current.GoToAsync($"{nameof(CategorySpendingPage)}?categoryId={category.CategoryId}&year={DateTime.Today.Year}&month={DateTime.Today.Month}");
+        await Shell.Current.GoToAsync($"{nameof(CategorySpendingPage)}?categoryId={e.Category.CategoryId}&year={DateTime.Today.Year}&month={DateTime.Today.Month}");
     }
 }

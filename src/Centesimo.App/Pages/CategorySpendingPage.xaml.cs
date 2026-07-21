@@ -1,4 +1,5 @@
 using Centesimo.App.ViewModels;
+using Centesimo.Application;
 
 namespace Centesimo.App.Pages;
 
@@ -23,7 +24,11 @@ public partial class CategorySpendingPage : ContentPage, IQueryAttributable
             !int.TryParse(monthValue?.ToString(), out var month))
             return;
 
-        _viewModel.Initialize(categoryId, year, month);
+        var period = query.TryGetValue("period", out var periodValue) &&
+            string.Equals(periodValue?.ToString(), "year", StringComparison.OrdinalIgnoreCase)
+            ? CategorySpendingPeriod.Year
+            : CategorySpendingPeriod.Month;
+        _viewModel.Initialize(categoryId, year, month, period);
     }
 
     protected override async void OnAppearing()
@@ -38,6 +43,8 @@ public partial class CategorySpendingPage : ContentPage, IQueryAttributable
     private async void OnTagClicked(object? sender, EventArgs e)
     {
         if (sender is not Button { CommandParameter: CategorySpendingViewModel.TagSpendingItemViewModel tag })
+            return;
+        if (!tag.IsActionable)
             return;
 
         var tagId = tag.TagId?.ToString() ?? "none";
