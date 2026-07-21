@@ -8,6 +8,7 @@ public sealed class SettingsViewModel(MoneyManagerImportService importService) :
     private bool _isBusy;
     private string _message = "";
     private bool _hasError;
+    private MoneyManagerImportPreview? _preview;
 
     public bool IsBusy
     {
@@ -22,6 +23,16 @@ public sealed class SettingsViewModel(MoneyManagerImportService importService) :
     public string Message { get => _message; private set => SetProperty(ref _message, value); }
     public bool HasMessage => Message.HasValue();
     public bool HasError { get => _hasError; private set => SetProperty(ref _hasError, value); }
+    public MoneyManagerImportPreview? PreviewResult
+    {
+        get => _preview;
+        private set
+        {
+            if (SetProperty(ref _preview, value))
+                OnPropertyChanged(nameof(HasPreview));
+        }
+    }
+    public bool HasPreview => PreviewResult is not null;
 
     public async Task<Result<MoneyManagerImportPreview>> Preview(Stream backup,
         CancellationToken cancellationToken = default)
@@ -30,12 +41,18 @@ public sealed class SettingsViewModel(MoneyManagerImportService importService) :
             return Result<MoneyManagerImportPreview>.Failure(MoneyManagerImportErrors.InvalidBackup);
 
         IsBusy = true;
+        ClearPreview();
         ClearMessage();
         try
         {
             var result = await importService.Preview(backup, cancellationToken);
             if (result.IsFailure)
+            {
+                ClearPreview();
                 ShowError(result.Error.Message);
+            }
+            else
+                PreviewResult = result.Value;
 
             return result;
         }
@@ -75,6 +92,7 @@ public sealed class SettingsViewModel(MoneyManagerImportService importService) :
                 $"{result.Value.RecurringPaymentsAdded} pagamenti regolari, " +
                 $"{result.Value.CategoriesAdded} categorie e {result.Value.TagsAdded} tag aggiunti. " +
                 $"Ignorati: {result.Value.IgnoredCount}; senza categoria: {result.Value.UncategorizedCount}.");
+            ClearPreview();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -89,6 +107,9 @@ public sealed class SettingsViewModel(MoneyManagerImportService importService) :
             IsBusy = false;
         }
     }
+    public Task ImportPreview(CancellationToken cancellationToken = default) =>
+        PreviewResult is null ? Task.CompletedTask : Import(PreviewResult, cancellationToken);
+    public void ClearPreview() => PreviewResult = null;
     public void ShowError(string message)
     {
         HasError = true;

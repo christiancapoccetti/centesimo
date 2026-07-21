@@ -26,6 +26,10 @@ public sealed record MoneyManagerImportPreview(MoneyManagerImportData Data, Mone
     public int TagsCount => Planned.TagsAdded;
     public int ExpensesCount => Planned.ExpensesAdded;
     public int RecurringPaymentsCount => Planned.RecurringPaymentsAdded;
+    public int ExistingItemsCount => Math.Max(0, Data.Categories.Count - Planned.CategoriesAdded) +
+        Math.Max(0, Data.Tags.Count - Planned.TagsAdded) +
+        Math.Max(0, Data.Expenses.Count - Planned.ExpensesAdded) +
+        Math.Max(0, Data.RecurringPaymentsOrEmpty.Count - Planned.RecurringPaymentsAdded);
 }
 public interface IMoneyManagerBackupReader
 {
