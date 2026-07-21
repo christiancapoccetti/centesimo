@@ -12,6 +12,7 @@ public sealed class ExpenseEditorViewModel : ObservableObject
     private readonly CategoryService _categoryService;
     private readonly TagService _tagService;
     private readonly ExpenseService _expenseService;
+    private readonly IPendingExpenseSpeechDraft _pendingSpeechDraft;
     private Guid? _expenseId;
     private string _amount = "";
     private CategoryOption? _selectedCategory;
@@ -60,11 +61,13 @@ public sealed class ExpenseEditorViewModel : ObservableObject
     public ExpenseEditorViewModel(
         CategoryService categoryService,
         TagService tagService,
-        ExpenseService expenseService)
+        ExpenseService expenseService,
+        IPendingExpenseSpeechDraft pendingSpeechDraft)
     {
         _categoryService = categoryService;
         _tagService = tagService;
         _expenseService = expenseService;
+        _pendingSpeechDraft = pendingSpeechDraft;
         SaveCommand = new AsyncCommand(Save, () => !IsSaving);
     }
 
@@ -84,6 +87,8 @@ public sealed class ExpenseEditorViewModel : ObservableObject
 
         if (_expenseId.HasValue && !HasError)
             await LoadExpense(_expenseId.Value);
+        else if (!HasError)
+            await ApplyPendingSpeechDraft();
 
         IsLoading = false;
     }
@@ -138,6 +143,31 @@ public sealed class ExpenseEditorViewModel : ObservableObject
         SelectedTag = Tags.FirstOrDefault(tag => tag.TagId == expense.TagId);
         if (expense.TagId.HasValue && SelectedTag is null)
             ErrorMessage = "Il tag originale non è più attivo. Scegli un tag disponibile o salva senza tag.";
+    }
+
+    private async Task ApplyPendingSpeechDraft()
+    {
+        var draft = _pendingSpeechDraft.Take();
+        if (draft is null)
+            return;
+
+        Amount = (draft.AmountCents / 100m).ToString("0.00", ItalianCulture);
+        OccurredOn = draft.OccurredOn?.ToDateTime(TimeOnly.MinValue) ?? DateTime.Today;
+        Note = draft.Note;
+        SelectedCategory = Categories.SingleOrDefault(category => category.Name.Equals(draft.CategoryName, StringComparison.OrdinalIgnoreCase));
+        if (SelectedCategory is null)
+        {
+            ErrorMessage = "La categoria riconosciuta non è più disponibile. Selezionala manualmente.";
+            return;
+        }
+
+        await LoadTags();
+        if (!draft.TagName.HasValue())
+            return;
+
+        SelectedTag = Tags.SingleOrDefault(tag => tag.Name.Equals(draft.TagName, StringComparison.OrdinalIgnoreCase));
+        if (SelectedTag is null)
+            ErrorMessage = "Il tag riconosciuto non è più disponibile. Selezionalo manualmente.";
     }
 
     public async Task<Result> Delete()

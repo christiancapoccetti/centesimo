@@ -16,6 +16,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<SettingsPage>();
         services.AddSingleton<RecurringPaymentAutomation>();
 #if ANDROID
+        services.AddSingleton<IOfflineSpeechRecognizer, VoskOfflineSpeechRecognizer>();
+#else
+        services.AddSingleton<IOfflineSpeechRecognizer, UnavailableOfflineSpeechRecognizer>();
+#endif
+        services.AddSingleton<SpeechExpenseDraftService>();
+#if ANDROID
         services.AddSingleton<IRecurringPaymentReminder, AndroidRecurringPaymentReminder>();
 #else
         services.AddSingleton<IRecurringPaymentReminder, NoOpRecurringPaymentReminder>();

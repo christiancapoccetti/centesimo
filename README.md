@@ -58,6 +58,12 @@ dotnet build src/Centesimo.App/Centesimo.App.csproj -t:Run -f net10.0-android `
 
 Confirm that the target device is available with `adb devices` before running the app. The minimum supported Android API level is 24.
 
+## Offline voice expense entry
+
+The microphone action records and transcribes only on the Android device with Vosk; audio is kept in memory and discarded after recognition. The Vosk Android runtime is packaged from Maven dependencies. To enable Italian recognition, provision the extracted `vosk-model-small-it-0.22` model directory in the app's private `AppDataDirectory` (the app shows an Italian message until it is available). The model is intentionally not committed to the repository or included in the APK.
+
+Recognized commands use a predictable grammar, for example: `Aggiungi spesa di 50 eur alla categoria spese auto, sotto tag tagliando`. The app only opens a prefilled editor after a unique active category/tag match; it never saves an expense automatically.
+
 ## License
 
 Centesimo is licensed under the [GNU General Public License v3.0](LICENSE).

@@ -23,6 +23,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+    <PackageReference Include="Vosk" Version="0.3.38" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android'">
+    <AndroidMavenLibrary Include="com.alphacephei:vosk-android" Version="0.3.75" Bind="false" />
+    <AndroidMavenLibrary Include="net.java.dev.jna:jna" Version="5.18.1" Bind="false" />
   </ItemGroup>
 
   <ItemGroup>
