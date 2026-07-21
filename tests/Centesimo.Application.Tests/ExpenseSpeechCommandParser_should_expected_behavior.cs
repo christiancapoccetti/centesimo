@@ -45,4 +45,18 @@ public sealed class ExpenseSpeechCommandParser_should_expected_behavior
         Assert.True(result.IsSuccess);
         Assert.Equal(amount, result.Value.Amount);
     }
+
+    [Theory]
+    [InlineData("Inserisci cinquanta euro e trentadue di spesa su lavoro")]
+    [InlineData("Inserisci 50 euro e 32 di spesa su lavoro")]
+    public void Parse_spoken_or_digit_cents(string transcription)
+    {
+        var result = _parser.Parse(transcription);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(50.32m, result.Value.Amount);
+    }
+
+    [Fact]
+    public void Reject_unknown_spoken_amount_typo() =>
+        Assert.True(_parser.Parse("Inserisci cinquata euro di spesa su lavoro").IsFailure);
 }

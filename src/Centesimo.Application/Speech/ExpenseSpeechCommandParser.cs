@@ -5,7 +5,6 @@ namespace Centesimo.Application;
 
 public sealed partial class ExpenseSpeechCommandParser
 {
-    private static readonly ItalianSpokenNumberParser SpokenNumbers = new();
     public Result<ExpenseSpeechCommand> Parse(string transcription)
     {
         if (string.IsNullOrWhiteSpace(transcription))
@@ -17,7 +16,9 @@ public sealed partial class ExpenseSpeechCommandParser
         if (!category.Success)
             return Result<ExpenseSpeechCommand>.Failure(new Error("Speech.InvalidCommand", "Di' ad esempio: aggiungi spesa di 50 euro alla categoria auto."));
 
-        var amountText = amount.Success ? amount.Groups["amount"].Value : AmountPhrasePattern().Match(normalized).Groups["amount"].Value;
+        var phrase = MoneyWithCentsPattern().Match(normalized);
+        var spoken = AmountPhrasePattern().Match(normalized);
+        var amountText = phrase.Success ? phrase.Groups["amount"].Value : amount.Success ? amount.Groups["amount"].Value : spoken.Groups["amount"].Value;
         if (!TryParseAmount(amountText, out var value) || value <= 0)
             return Result<ExpenseSpeechCommand>.Failure(new Error("Speech.InvalidAmount", "L'importo non è valido."));
 
@@ -38,6 +39,9 @@ public sealed partial class ExpenseSpeechCommandParser
     [GeneratedRegex(@"(?<amount>(?:zero|uno|due|tre|quattro|cinque|sei|sette|otto|nove|dieci|undici|dodici|tredici|quattordici|quindici|sedici|diciassette|diciotto|diciannove|venti|trenta|quaranta|cinquanta|sessanta|settanta|ottanta|novanta|cento|mille|mila|\s)+\s*(?:euro|eur|€)(?:\s+(?:e|virgola)\s+(?:\w+|\d+))?)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex AmountPhrasePattern();
 
+    [GeneratedRegex(@"(?<amount>(?:\d+|[a-zàèéìòù]+)\s*(?:euro|eur|€)\s+e\s+(?:\d+|[a-zàèéìòù]+))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex MoneyWithCentsPattern();
+
     [GeneratedRegex(@"(?:(?:alla|nella|in)\s+categoria|categoria|spesa\s+(?:su|in)|(?:su|in))\s+(?<category>.+?)(?=\s+(?:sotto\s+)?tag\s+|\s+con\s+nota\s+|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex CategoryPattern();
 
@@ -51,10 +55,18 @@ public sealed partial class ExpenseSpeechCommandParser
 
     private static bool TryParseAmount(string text, out decimal value)
     {
+        var money = Regex.Match(text, @"^(?<whole>.+?)\s*(?:euro|eur|€)(?:\s+e\s+(?<cents>.+))?$", RegexOptions.IgnoreCase);
+        if (money.Success && TryParseAmount(money.Groups["whole"].Value, out var whole))
+        {
+            if (!money.Groups["cents"].Success) { value = whole; return true; }
+            if (TryParseAmount(money.Groups["cents"].Value, out var cents) && cents is >= 0 and <= 99) { value = whole + cents / 100m; return true; }
+        }
         if (decimal.TryParse(text.Replace(',', '.'), NumberStyles.Number, CultureInfo.InvariantCulture, out value))
             return true;
 
-        if (SpokenNumbers.TryParse(text, out value)) return true;
+        var recognized = Microsoft.Recognizers.Text.Number.NumberRecognizer.RecognizeNumber(text, Microsoft.Recognizers.Text.Culture.Italian);
+        var resolution = recognized.FirstOrDefault()?.Resolution;
+        if (resolution is not null && resolution.TryGetValue("value", out var recognizedValue) && decimal.TryParse(recognizedValue?.ToString(), NumberStyles.Number, CultureInfo.InvariantCulture, out value)) return true;
         var normalized = text.Trim().ToLowerInvariant().Replace(" ", "");
         var values = new Dictionary<string, decimal>
         {
