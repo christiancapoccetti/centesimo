@@ -321,8 +321,8 @@ public sealed class MoneyManagerBackupReader : IMoneyManagerBackupReader
     {
         var required = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
         {
-            ["reminding"] = ["uid", "period", "startDate", "endDate", "lastTransactionDate", "enabled", "isRemoved", "remindingType"],
-            ["regular_payment_period"] = ["uid"]
+            ["reminding"] = ["uid", "period", "startDate", "endDate", "enabled", "isRemoved", "remindingType"],
+            ["regular_payment_period"] = ["uid", "lastTransactionDate"]
         };
         foreach (var table in required)
         {
@@ -349,9 +349,10 @@ public sealed class MoneyManagerBackupReader : IMoneyManagerBackupReader
         var result = new Dictionary<string, MoneyManagerRecurringPayment>(StringComparer.Ordinal);
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT r.uid,r.period,r.startDate,r.endDate,r.lastTransactionDate,t.uid
+            SELECT r.uid,r.period,r.startDate,r.endDate,p.lastTransactionDate,t.uid
             FROM reminding r
             JOIN sync_link rp ON rp.entityType='Reminding' AND rp.entityUid=r.uid AND rp.otherType='RegularPaymentPeriod' AND rp.isRemoved=0
+            JOIN regular_payment_period p ON p.uid=rp.otherUid AND p.isRemoved=0
             JOIN sync_link pt ON pt.entityType='RegularPaymentPeriod' AND pt.entityUid=rp.otherUid AND pt.otherType='Transaction' AND pt.isRemoved=0
             JOIN [transaction] t ON t.uid=pt.otherUid
             WHERE r.isRemoved=0 AND r.enabled=1 AND r.remindingType='regularPayments'

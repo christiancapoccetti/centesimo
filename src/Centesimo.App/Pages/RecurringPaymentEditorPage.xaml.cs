@@ -9,6 +9,13 @@ public partial class RecurringPaymentEditorPage : ContentPage, IQueryAttributabl
     public RecurringPaymentEditorPage(RecurringPaymentEditorViewModel viewModel) { InitializeComponent(); _viewModel = viewModel; BindingContext = viewModel; viewModel.Saved += async (_, _) => await Shell.Current.GoToAsync(".."); }
     public void ApplyQueryAttributes(IDictionary<string, object> query) => _paymentId = query.TryGetValue("paymentId", out var value) && Guid.TryParse(value?.ToString(), out var id) ? id : null;
     protected override async void OnAppearing() { base.OnAppearing(); await _viewModel.Load(_paymentId); }
-    private async void OnCategoryTapped(object? sender, TappedEventArgs e) { if (sender is not BindableObject { BindingContext: ExpenseEditorViewModel.CategoryOption category }) return; _viewModel.SelectedCategory = category; await _viewModel.LoadTags(); }
+    private async void OnCategorySelectorTapped(object? sender, object category)
+    {
+        if (category is not ExpenseEditorViewModel.CategoryOption option)
+            return;
+
+        _viewModel.SelectedCategory = option;
+        await _viewModel.LoadTags();
+    }
     private async void OnCloseClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync("..");
 }
