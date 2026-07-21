@@ -31,7 +31,6 @@ public sealed class InsightsService_should_expected_behavior
     }
 
     [Fact]
-    [Fact]
     public async Task Should_compare_current_month_with_same_elapsed_days_of_previous_month()
     {
         var category = new Category(Guid.NewGuid(), "Spesa", "cart", "#196D61");
