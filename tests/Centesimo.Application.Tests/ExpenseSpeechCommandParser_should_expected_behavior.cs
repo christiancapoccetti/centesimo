@@ -35,4 +35,14 @@ public sealed class ExpenseSpeechCommandParser_should_expected_behavior
         Assert.Equal(50m, result.Value.Amount);
         Assert.Equal(category, result.Value.CategoryName);
     }
+
+    [Theory]
+    [InlineData("Inserisci cinquanta euro di spesa su lavoro", 50)]
+    [InlineData("Aggiungi centoventi euro alla categoria lavoro", 120)]
+    public void Parse_common_italian_spoken_amounts(string transcription, decimal amount)
+    {
+        var result = _parser.Parse(transcription);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(amount, result.Value.Amount);
+    }
 }

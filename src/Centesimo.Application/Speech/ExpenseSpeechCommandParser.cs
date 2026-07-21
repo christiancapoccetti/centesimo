@@ -13,11 +13,11 @@ public sealed partial class ExpenseSpeechCommandParser
         var normalized = transcription.Trim();
         var amount = AmountPattern().Match(normalized);
         var category = CategoryPattern().Match(normalized);
-        if (!amount.Success || !category.Success)
+        if (!category.Success)
             return Result<ExpenseSpeechCommand>.Failure(new Error("Speech.InvalidCommand", "Di' ad esempio: aggiungi spesa di 50 euro alla categoria auto."));
 
-        var amountText = amount.Groups["amount"].Value.Replace(',', '.');
-        if (!decimal.TryParse(amountText, NumberStyles.Number, CultureInfo.InvariantCulture, out var value) || value <= 0)
+        var amountText = amount.Success ? amount.Groups["amount"].Value : SpokenAmountPattern().Match(normalized).Groups["amount"].Value;
+        if (!TryParseAmount(amountText, out var value) || value <= 0)
             return Result<ExpenseSpeechCommand>.Failure(new Error("Speech.InvalidAmount", "L'importo non è valido."));
 
         var tag = TagPattern().Match(normalized);
@@ -34,6 +34,9 @@ public sealed partial class ExpenseSpeechCommandParser
     [GeneratedRegex(@"(?:(?:di|da)\s+)?(?<amount>\d+(?:[,.]\d{1,2})?)\s*(?:€|euro|eur)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex AmountPattern();
 
+    [GeneratedRegex(@"(?<amount>[a-zàèéìòù\s]+)\s*(?:euro|eur)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex SpokenAmountPattern();
+
     [GeneratedRegex(@"(?:(?:alla|nella|in)\s+categoria|categoria|spesa\s+(?:su|in)|(?:su|in))\s+(?<category>.+?)(?=\s+(?:sotto\s+)?tag\s+|\s+con\s+nota\s+|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex CategoryPattern();
 
@@ -44,4 +47,19 @@ public sealed partial class ExpenseSpeechCommandParser
     private static partial Regex NotePattern();
 
     private static string TrimPunctuation(string value) => value.Trim().TrimEnd(',', '.', ';', ':');
+
+    private static bool TryParseAmount(string text, out decimal value)
+    {
+        if (decimal.TryParse(text.Replace(',', '.'), NumberStyles.Number, CultureInfo.InvariantCulture, out value))
+            return true;
+
+        var normalized = text.Trim().ToLowerInvariant().Replace(" ", "");
+        var values = new Dictionary<string, decimal>
+        {
+            ["zero"] = 0, ["uno"] = 1, ["due"] = 2, ["tre"] = 3, ["quattro"] = 4, ["cinque"] = 5,
+            ["dieci"] = 10, ["venti"] = 20, ["cinquanta"] = 50, ["cento"] = 100, ["centoventi"] = 120,
+            ["mille"] = 1000, ["milleduecento"] = 1200
+        };
+        return values.TryGetValue(normalized, out value);
+    }
 }
