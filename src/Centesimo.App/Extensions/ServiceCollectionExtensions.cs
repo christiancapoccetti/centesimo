@@ -10,6 +10,8 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton<TodayViewModel>();
         services.AddSingleton<TodayPage>();
+        services.AddSingleton<InsightsViewModel>();
+        services.AddSingleton<InsightsPage>();
         services.AddSingleton<CategoriesViewModel>();
         services.AddSingleton<CategoriesPage>();
         services.AddSingleton<SettingsViewModel>();

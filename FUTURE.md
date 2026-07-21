@@ -29,7 +29,4 @@ Items are not commitments and will be prioritized after the core manual expense 
 
 ## Insights
 
-- Spending trends and category comparisons.
-- Toggle the dashboard period between “Questo mese” and “Questo anno” by tapping the period label.
 - Configurable budget alerts.
-- Local-only suggestions based on spending history.
