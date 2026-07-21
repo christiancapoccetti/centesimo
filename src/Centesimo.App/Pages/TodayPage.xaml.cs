@@ -61,6 +61,9 @@ public partial class TodayPage : ContentPage
 
     private async void OnCategoryClicked(object? sender, EventArgs e)
     {
+        if (_viewModel.IsYearlyOverview)
+            return;
+
         if (sender is not Button { CommandParameter: TodayViewModel.MonthlyCategoryItemViewModel category })
             return;
 
