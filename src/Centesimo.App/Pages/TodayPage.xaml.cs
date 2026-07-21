@@ -9,6 +9,7 @@ public partial class TodayPage : ContentPage
     private readonly SpeechExpenseDraftService _speechDraftService;
     private readonly IItalianSpeechModelProvisioner _modelProvisioner;
     private Task<Result>? _speechStart;
+    private int _speechPreparationSession;
     private int _speechSession;
 
     public TodayPage(TodayViewModel viewModel, SpeechExpenseDraftService speechDraftService, IItalianSpeechModelProvisioner modelProvisioner)
@@ -90,6 +91,9 @@ public partial class TodayPage : ContentPage
                 {
                     return Result.Failure(provision.Error);
                 }
+
+                _speechPreparationSession = session;
+                return Result.Success();
             }
 
             var permission = await Permissions.RequestAsync<Permissions.Microphone>();
@@ -120,6 +124,7 @@ public partial class TodayPage : ContentPage
     {
         try
         {
+            var session = _speechSession;
             var start = _speechStart;
             if (start is null)
                 return;
@@ -128,6 +133,16 @@ public partial class TodayPage : ContentPage
             _viewModel.IsSpeechListening = false;
             _viewModel.IsSpeechProcessing = true;
             _viewModel.IsSpeechSheetVisible = true;
+            if (_speechPreparationSession == session)
+            {
+                _speechPreparationSession = 0;
+                _viewModel.IsSpeechProcessing = false;
+                _viewModel.IsSpeechSheetVisible = false;
+                _viewModel.SpeechErrorMessage = "";
+                _viewModel.SpeechTranscription = "Modello pronto. Tieni premuto il microfono per registrare.";
+                return;
+            }
+
             if (startResult.IsFailure)
             {
                 _viewModel.IsSpeechProcessing = false;
@@ -137,6 +152,7 @@ public partial class TodayPage : ContentPage
 
             var result = await _speechDraftService.StopAndPrepare();
             _viewModel.IsSpeechProcessing = false;
+            _viewModel.SpeechTranscription = _speechDraftService.LastTranscription;
             if (result.IsFailure)
             {
                 _viewModel.SpeechErrorMessage = $"Non ho capito bene. {result.Error.Message}";

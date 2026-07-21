@@ -12,6 +12,7 @@
 *.env
 *.mmbackup
 tmp/
+src/Centesimo.App/Resources/Raw/*.bin
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

@@ -17,15 +17,25 @@ public sealed class SpeechExpenseDraftService(
     }
 
     public bool IsListening => recognizer.IsListening;
+    public string LastTranscription { get; private set; } = "";
 
-    public Task<Result> Start(CancellationToken cancellationToken = default) => recognizer.Start(cancellationToken);
+    public Task<Result> Start(CancellationToken cancellationToken = default)
+    {
+        LastTranscription = "";
+        return recognizer.Start(cancellationToken);
+    }
     public Task Cancel() => recognizer.Cancel();
 
     public async Task<Result> StopAndPrepare(CancellationToken cancellationToken = default)
     {
         var transcription = await recognizer.Stop(cancellationToken);
         if (transcription.IsFailure)
+        {
+            LastTranscription = "";
             return Result.Failure(transcription.Error);
+        }
+
+        LastTranscription = transcription.Value;
 
         var command = parser.Parse(transcription.Value);
         if (command.IsFailure)
