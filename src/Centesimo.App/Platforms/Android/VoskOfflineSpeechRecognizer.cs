@@ -11,7 +11,6 @@ public sealed class VoskOfflineSpeechRecognizer : IOfflineSpeechRecognizer, IDis
     private const int SampleRate = 16_000;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private RecordingSession? _session;
-    private AudioRecord? _audioRecord;
 
     public event EventHandler<string>? TranscriptionUpdated;
     public bool IsListening => Volatile.Read(ref _session) is not null;
@@ -31,9 +30,9 @@ public sealed class VoskOfflineSpeechRecognizer : IOfflineSpeechRecognizer, IDis
             if (_session is not null)
                 return Result.Failure(new Error("Speech.AlreadyListening", "La registrazione è già attiva."));
 
-            var recording = new CancellationTokenSource();
-            var recognition = Task.Run(() => Recognize(modelPath, recording.Token), CancellationToken.None);
-            _session = new RecordingSession(recording, recognition);
+            var session = new RecordingSession();
+            session.Start(modelPath, Recognize);
+            _session = session;
             return Result.Success();
         }
         finally
@@ -94,7 +93,6 @@ public sealed class VoskOfflineSpeechRecognizer : IOfflineSpeechRecognizer, IDis
             if (session is not null)
             {
                 session.Cancel();
-                _audioRecord?.Stop();
             }
 
             return session;
@@ -105,7 +103,7 @@ public sealed class VoskOfflineSpeechRecognizer : IOfflineSpeechRecognizer, IDis
         }
     }
 
-    private string Recognize(string modelPath, CancellationToken cancellationToken)
+    private string Recognize(string modelPath, RecordingSession session)
     {
         Vosk.Vosk.SetLogLevel(-1);
         using var model = new Model(modelPath);
@@ -113,11 +111,11 @@ public sealed class VoskOfflineSpeechRecognizer : IOfflineSpeechRecognizer, IDis
         var bufferSize = AudioRecord.GetMinBufferSize(SampleRate, ChannelIn.Mono, Encoding.Pcm16bit);
         var audioRecord = new AudioRecord(AudioSource.Mic, SampleRate, ChannelIn.Mono, Encoding.Pcm16bit, bufferSize * 2);
         var buffer = new short[bufferSize];
-        _audioRecord = audioRecord;
         audioRecord.StartRecording();
+        session.Attach(audioRecord);
         try
         {
-            while (!cancellationToken.IsCancellationRequested)
+            while (!session.IsCancellationRequested)
             {
                 var read = audioRecord.Read(buffer, 0, buffer.Length);
                 if (read <= 0)
@@ -133,12 +131,10 @@ public sealed class VoskOfflineSpeechRecognizer : IOfflineSpeechRecognizer, IDis
         }
         finally
         {
-            if (audioRecord.RecordingState == RecordState.Recording)
-                audioRecord.Stop();
+            StopRecording(audioRecord);
             audioRecord.Release();
             audioRecord.Dispose();
-            if (ReferenceEquals(_audioRecord, audioRecord))
-                _audioRecord = null;
+            session.Detach(audioRecord);
             Array.Clear(buffer);
         }
     }
@@ -153,15 +149,58 @@ public sealed class VoskOfflineSpeechRecognizer : IOfflineSpeechRecognizer, IDis
 
     public void Dispose()
     {
-        _ = Cancel();
-        _gate.Dispose();
+        Cancel().GetAwaiter().GetResult();
     }
 
-    private sealed class RecordingSession(CancellationTokenSource cancellation, Task<string> recognition) : IDisposable
+    private static void StopRecording(AudioRecord audioRecord)
     {
-        public Task<string> Recognition { get; } = recognition;
-        public void Cancel() => cancellation.Cancel();
-        public void Dispose() => cancellation.Dispose();
+        try
+        {
+            if (audioRecord.RecordingState == RecordState.Recording)
+                audioRecord.Stop();
+        }
+        catch (Java.Lang.IllegalStateException)
+        {
+        }
+    }
+
+    private sealed class RecordingSession : IDisposable
+    {
+        private readonly object _sync = new();
+        private readonly CancellationTokenSource _cancellation = new();
+        private AudioRecord? _audioRecord;
+        public Task<string> Recognition { get; private set; } = Task.FromResult("");
+        public bool IsCancellationRequested => _cancellation.IsCancellationRequested;
+
+        public void Start(string modelPath, Func<string, RecordingSession, string> recognize) =>
+            Recognition = Task.Run(() => recognize(modelPath, this), CancellationToken.None);
+
+        public void Attach(AudioRecord audioRecord)
+        {
+            lock (_sync)
+            {
+                _audioRecord = audioRecord;
+                if (_cancellation.IsCancellationRequested)
+                    StopRecording(audioRecord);
+            }
+        }
+
+        public void Detach(AudioRecord audioRecord)
+        {
+            lock (_sync)
+                if (ReferenceEquals(_audioRecord, audioRecord))
+                    _audioRecord = null;
+        }
+
+        public void Cancel()
+        {
+            _cancellation.Cancel();
+            lock (_sync)
+                if (_audioRecord is not null)
+                    StopRecording(_audioRecord);
+        }
+
+        public void Dispose() => _cancellation.Dispose();
     }
 }
 #endif
