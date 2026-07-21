@@ -50,7 +50,7 @@
             <Label Text="{Binding Message}" IsVisible="{Binding HasMessage}" TextColor="{Binding HasError, Converter={StaticResource ImportMessageColorConverter}}" />
             <Label Text="APP" Style="{StaticResource LabelLarge}" TextColor="{StaticResource PrimaryLight}" />
             <Border Style="{StaticResource SurfaceCard}" Padding="16"><Grid ColumnDefinitions="*,Auto"><Label Text="Versione 1.0" Style="{StaticResource BodyMedium}" /><Label Grid.Column="1" Text="›" Style="{StaticResource TitleLarge}" TextColor="{StaticResource PrimaryLight}" /></Grid></Border>
-            <VerticalStackLayout Spacing="2" Margin="0,12,0,0"><Label Text="LICENZE OPEN SOURCE" Style="{StaticResource LabelLarge}" TextColor="{StaticResource PrimaryLight}" /><Label Text="Microsoft Recognizers Text © Microsoft Corporation — MIT License. Componente open-source." Style="{StaticResource BodyMedium}" FontSize="11" LineBreakMode="WordWrap" /></VerticalStackLayout>
+            <VerticalStackLayout Spacing="8" Margin="0,12,0,0"><Label Text="LICENZE OPEN SOURCE" Style="{StaticResource LabelLarge}" TextColor="{StaticResource PrimaryLight}" /><Label Text="Consulta gli avvisi e le licenze dei componenti utilizzati dall'app." Style="{StaticResource BodyMedium}" /><Button Text="Visualizza licenze" Style="{StaticResource TextActionButton}" HorizontalOptions="Start" Clicked="OnOpenSourceLicensesClicked" /></VerticalStackLayout>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

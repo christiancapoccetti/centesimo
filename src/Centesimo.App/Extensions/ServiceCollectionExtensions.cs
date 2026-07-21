@@ -16,6 +16,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<CategoriesPage>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<SettingsPage>();
+        services.AddTransient<OpenSourceLicensesPage>();
         services.AddSingleton<RecurringPaymentAutomation>();
 #if ANDROID
         services.AddSingleton<IOfflineSpeechRecognizer, WhisperOfflineSpeechRecognizer>();

@@ -43,4 +43,7 @@ public partial class SettingsPage : ContentPage
         }
     }
     private async void OnImportPreviewClicked(object? sender, EventArgs e) => await _viewModel.ImportPreview();
+
+    private async void OnOpenSourceLicensesClicked(object? sender, EventArgs e) =>
+        await Shell.Current.GoToAsync(nameof(OpenSourceLicensesPage));
 }
