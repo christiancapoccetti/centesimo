@@ -154,20 +154,18 @@ public sealed class ExpenseEditorViewModel : ObservableObject
         Amount = (draft.AmountCents / 100m).ToString("0.00", ItalianCulture);
         OccurredOn = draft.OccurredOn?.ToDateTime(TimeOnly.MinValue) ?? DateTime.Today;
         Note = draft.Note;
+        if (!draft.CategoryId.HasValue)
+            return;
+
         SelectedCategory = Categories.SingleOrDefault(category => category.CategoryId == draft.CategoryId);
         if (SelectedCategory is null)
-        {
-            ErrorMessage = "La categoria riconosciuta non è più disponibile. Selezionala manualmente.";
             return;
-        }
 
         await LoadTags();
-        if (!draft.TagName.HasValue())
+        if (!draft.TagId.HasValue)
             return;
 
         SelectedTag = Tags.SingleOrDefault(tag => tag.TagId == draft.TagId);
-        if (SelectedTag is null)
-            ErrorMessage = "Il tag riconosciuto non è più disponibile. Selezionalo manualmente.";
     }
 
     public async Task<Result> Delete()

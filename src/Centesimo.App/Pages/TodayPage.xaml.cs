@@ -137,6 +137,7 @@ public partial class TodayPage : ContentPage
 
             var result = await _speechDraftService.StopAndPrepare();
             _viewModel.IsSpeechProcessing = false;
+            _viewModel.SpeechTranscription = _speechDraftService.LastTranscription;
             if (result.IsFailure)
             {
                 _viewModel.SpeechErrorMessage = $"Non ho capito bene. {result.Error.Message}";

@@ -1,4 +1,4 @@
-using System.IO.Compression;
+using System.Security.Cryptography;
 using Centesimo.Application;
 using Microsoft.Maui.Storage;
 
@@ -12,9 +12,13 @@ public interface IItalianSpeechModelProvisioner
 
 public sealed class ItalianSpeechModelProvisioner : IItalianSpeechModelProvisioner
 {
-    public const string ModelName = "vosk-model-small-it-0.22";
+    public const string ModelName = "ggml-small-q5_1.bin";
+    private const string ModelUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin";
+    private const string ModelSha1 = "6fe57ddcfdd1c6b07cdcc73aaf620810ce5fc771";
+    private static readonly HttpClient Client = new();
+    private bool? _isAvailable;
     private string ModelPath => Path.Combine(FileSystem.AppDataDirectory, ModelName);
-    public bool IsAvailable => Directory.Exists(ModelPath);
+    public bool IsAvailable => _isAvailable ??= IsValid(ModelPath);
 
     public async Task<Result> Prepare(IProgress<double>? progress = null, CancellationToken cancellationToken = default)
     {
@@ -24,38 +28,43 @@ public sealed class ItalianSpeechModelProvisioner : IItalianSpeechModelProvision
         var temporary = Path.Combine(FileSystem.CacheDirectory, $"{ModelName}-{Guid.NewGuid():N}");
         try
         {
-            Directory.CreateDirectory(temporary);
-            await using var asset = await FileSystem.OpenAppPackageFileAsync($"{ModelName}.zip");
-            using var archive = new ZipArchive(asset, ZipArchiveMode.Read);
-            var entries = archive.Entries.Where(entry => !string.IsNullOrEmpty(entry.Name)).ToList();
-            if (entries.Count == 0 || archive.Entries.Any(entry => !ZipEntryPathSafety.IsSafe(entry.FullName)) ||
-                !ZipEntryPathSafety.HasExpectedModelLayout(archive.Entries.Select(entry => entry.FullName), ModelName))
-                return Result.Failure(new Error("Speech.ModelInvalid", "Il modello incluso non è valido."));
+            using var response = await Client.GetAsync(ModelUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                return Result.Failure(new Error("Speech.ModelDownloadFailed", "Non riesco a scaricare il modello italiano."));
 
-            for (var index = 0; index < entries.Count; index++)
+            await using var source = await response.Content.ReadAsStreamAsync(cancellationToken);
+            await using var target = File.Create(temporary);
+            var buffer = new byte[81_920];
+            var copied = 0L;
+            while (true)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                var entry = entries[index];
-                var destination = Path.Combine(temporary, entry.FullName);
-                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-                await using var source = entry.Open();
-                await using var target = File.Create(destination);
-                await source.CopyToAsync(target, cancellationToken);
-                progress?.Report((double)(index + 1) / entries.Count);
+                var read = await source.ReadAsync(buffer, cancellationToken);
+                if (read == 0)
+                    break;
+
+                await target.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                copied += read;
+                if (response.Content.Headers.ContentLength is { } length && length > 0)
+                    progress?.Report((double)copied / length);
             }
 
-            var extracted = Path.Combine(temporary, ModelName);
-            if (!File.Exists(Path.Combine(extracted, "am", "final.mdl")) ||
-                !File.Exists(Path.Combine(extracted, "conf", "model.conf")))
-                return Result.Failure(new Error("Speech.ModelInvalid", "Il modello incluso non è valido."));
+            await target.FlushAsync(cancellationToken);
+            if (!IsValid(temporary))
+                return Result.Failure(new Error("Speech.ModelIntegrityFailed", "Il modello scaricato non è valido. Riprova."));
 
             Directory.CreateDirectory(FileSystem.AppDataDirectory);
-            Directory.Move(extracted, ModelPath);
+            File.Move(temporary, ModelPath, true);
+            _isAvailable = true;
+            progress?.Report(1);
             return Result.Success();
         }
         catch (OperationCanceledException)
         {
-            return Result.Failure(new Error("Speech.ModelPreparationCanceled", "Preparazione del modello annullata."));
+            return Result.Failure(new Error("Speech.ModelPreparationCanceled", "Download del modello annullato."));
+        }
+        catch (HttpRequestException)
+        {
+            return Result.Failure(new Error("Speech.ModelDownloadFailed", "Non riesco a scaricare il modello italiano. Controlla la connessione."));
         }
         catch (Exception)
         {
@@ -63,10 +72,17 @@ public sealed class ItalianSpeechModelProvisioner : IItalianSpeechModelProvision
         }
         finally
         {
-            if (Directory.Exists(ModelPath) && !File.Exists(Path.Combine(ModelPath, "am", "final.mdl")))
-                Directory.Delete(ModelPath, true);
-            if (Directory.Exists(temporary))
-                Directory.Delete(temporary, true);
+            if (File.Exists(temporary))
+                File.Delete(temporary);
         }
+    }
+
+    internal static bool IsValid(string path)
+    {
+        if (!File.Exists(path) || new FileInfo(path).Length == 0)
+            return false;
+
+        using var stream = File.OpenRead(path);
+        return Convert.ToHexString(SHA1.HashData(stream)).Equals(ModelSha1, StringComparison.OrdinalIgnoreCase);
     }
 }
