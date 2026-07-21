@@ -8,10 +8,28 @@ namespace Centesimo.App.ViewModels;
 public sealed class CategoriesViewModel(CategoryService categoryService) : ObservableObject
 {
     private bool _isLoading;
+    private bool _isArchivedView;
     private string _errorMessage = "";
 
     public ObservableCollection<CategoryItemViewModel> Categories { get; } = [];
+    public ObservableCollection<CategoryItemViewModel> ArchivedCategories { get; } = [];
     public ICommand LoadCommand => new AsyncCommand(Load);
+    public bool IsArchivedView
+    {
+        get => _isArchivedView;
+        private set
+        {
+            if (!SetProperty(ref _isArchivedView, value))
+                return;
+
+            OnPropertyChanged(nameof(IsActiveView));
+            OnPropertyChanged(nameof(DisplayedCategories));
+            NotifyState();
+        }
+    }
+    public bool IsActiveView => !IsArchivedView;
+    public ObservableCollection<CategoryItemViewModel> DisplayedCategories =>
+        IsArchivedView ? ArchivedCategories : Categories;
     public bool IsLoading { get => _isLoading; private set => SetProperty(ref _isLoading, value); }
     public string ErrorMessage
     {
@@ -23,20 +41,38 @@ public sealed class CategoriesViewModel(CategoryService categoryService) : Obser
         }
     }
     public bool HasError => ErrorMessage.HasValue();
-    public bool HasCategories => Categories.Count > 0;
+    public bool HasCategories => DisplayedCategories.Count > 0;
     public bool IsEmpty => !IsLoading && !HasError && !HasCategories;
 
     public async Task Load()
     {
+        IsArchivedView = false;
+        await LoadCategories(() => categoryService.GetActive(), Categories);
+    }
+
+    public async Task LoadArchived()
+    {
+        IsArchivedView = true;
+        await LoadCategories(() => categoryService.GetArchived(), ArchivedCategories);
+    }
+
+    public Task ShowActive() => Load();
+
+    public Task ShowArchived() => LoadArchived();
+
+    private async Task LoadCategories(
+        Func<Task<Result<IReadOnlyList<Category>>>> getCategories,
+        ObservableCollection<CategoryItemViewModel> destination)
+    {
         IsLoading = true;
         ErrorMessage = "";
-        var result = await categoryService.GetActive();
-        Categories.Clear();
+        var result = await getCategories();
+        destination.Clear();
         if (result.IsFailure)
             ErrorMessage = result.Error.Message;
         else
             foreach (var category in result.Value)
-                Categories.Add(CategoryItemViewModel.From(category));
+                destination.Add(CategoryItemViewModel.From(category));
 
         IsLoading = false;
         NotifyState();
@@ -46,7 +82,18 @@ public sealed class CategoriesViewModel(CategoryService categoryService) : Obser
     {
         var result = await categoryService.Archive(categoryId);
         if (result.IsSuccess)
-            await Load();
+            await LoadCategories(() => categoryService.GetActive(), Categories);
+        else
+            ErrorMessage = result.Error.Message;
+
+        return result;
+    }
+
+    public async Task<Result> Restore(Guid categoryId)
+    {
+        var result = await categoryService.Restore(categoryId);
+        if (result.IsSuccess)
+            await LoadCategories(() => categoryService.GetArchived(), ArchivedCategories);
         else
             ErrorMessage = result.Error.Message;
 

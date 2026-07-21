@@ -27,6 +27,10 @@ public partial class CategoriesPage : ContentPage
         await Navigation.PushModalAsync(_editorPage, false);
     }
 
+    private async void OnActiveClicked(object? sender, EventArgs e) => await _viewModel.ShowActive();
+
+    private async void OnArchivedClicked(object? sender, EventArgs e) => await _viewModel.ShowArchived();
+
     private async void OnEditClicked(object? sender, EventArgs e)
     {
         if (sender is not Button { CommandParameter: CategoryItemViewModel category })
@@ -56,5 +60,13 @@ public partial class CategoriesPage : ContentPage
             return;
 
         await _viewModel.Archive(category.CategoryId);
+    }
+
+    private async void OnRestoreClicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { CommandParameter: CategoryItemViewModel category })
+            return;
+
+        await _viewModel.Restore(category.CategoryId);
     }
 }

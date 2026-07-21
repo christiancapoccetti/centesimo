@@ -1,8 +1,47 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="Centesimo.App.Pages.CategoriesPage" Title="Categorie" SafeAreaEdges="All">
- <Grid Padding="22,14,22,16" RowDefinitions="Auto,*,Auto" RowSpacing="16">
-  <VerticalStackLayout Spacing="3"><Label Text="Categorie" Style="{StaticResource HeadlineLarge}" /><Label Text="Organizza le spese come preferisci." Style="{StaticResource BodyMedium}" /></VerticalStackLayout>
-  <Grid Grid.Row="1"><ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" /><VerticalStackLayout IsVisible="{Binding HasError}" Style="{StaticResource EmptyStateLayout}"><Label Text="Impossibile caricare le categorie" Style="{StaticResource TitleLarge}" /><Label Text="{Binding ErrorMessage}" Style="{StaticResource BodyMedium}" /></VerticalStackLayout><VerticalStackLayout IsVisible="{Binding IsEmpty}" Style="{StaticResource EmptyStateLayout}"><Label Text="Nessuna categoria" Style="{StaticResource TitleLarge}" /><Label Text="Creane una per iniziare." Style="{StaticResource BodyMedium}" /></VerticalStackLayout><CollectionView ItemsSource="{Binding Categories}" IsVisible="{Binding HasCategories}" SelectionMode="None" Margin="0,8,0,0"><CollectionView.ItemTemplate><DataTemplate><Grid ColumnDefinitions="52,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="14" Padding="0,12"><Border Grid.RowSpan="2" Style="{StaticResource CategoryIconContainer}" WidthRequest="52" HeightRequest="52" BackgroundColor="{Binding Color}"><Image Source="{Binding Icon, Converter={StaticResource CategoryIconSourceConverter}}" Style="{StaticResource CategoryIconImage}" /></Border><Label Grid.Column="1" Text="{Binding Name}" Style="{StaticResource TitleMedium}" VerticalOptions="End" /><Label Grid.Row="1" Grid.Column="1" Text="{Binding BudgetText}" Style="{StaticResource BodyMedium}" VerticalOptions="Start" /><Button Grid.Column="2" Grid.RowSpan="2" Text="⋯" Style="{StaticResource IconButton}" Clicked="OnArchiveClicked" CommandParameter="{Binding .}" /><Button Grid.RowSpan="2" Grid.ColumnSpan="2" BackgroundColor="Transparent" Text="" Clicked="OnEditClicked" CommandParameter="{Binding .}" /></Grid></DataTemplate></CollectionView.ItemTemplate></CollectionView></Grid>
-  <Button Grid.Row="2" Text="＋  Nuova categoria" Style="{StaticResource PrimaryActionButton}" Clicked="OnNewCategoryClicked" />
- </Grid>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Centesimo.App.Pages.CategoriesPage"
+             Title="Categorie"
+             SafeAreaEdges="All">
+    <Grid Padding="22,14,22,16" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="16">
+        <VerticalStackLayout Spacing="3">
+            <Label Text="Categorie" Style="{StaticResource HeadlineLarge}" />
+            <Label Text="Organizza le spese come preferisci." Style="{StaticResource BodyMedium}" />
+        </VerticalStackLayout>
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="8">
+            <Button Text="Attive" Style="{StaticResource TextActionButton}" Clicked="OnActiveClicked" />
+            <Button Grid.Column="1" Text="Archiviate" Style="{StaticResource TextActionButton}" Clicked="OnArchivedClicked" />
+        </Grid>
+        <Grid Grid.Row="2">
+            <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" />
+            <VerticalStackLayout IsVisible="{Binding HasError}" Style="{StaticResource EmptyStateLayout}">
+                <Label Text="Impossibile caricare le categorie" Style="{StaticResource TitleLarge}" />
+                <Label Text="{Binding ErrorMessage}" Style="{StaticResource BodyMedium}" />
+            </VerticalStackLayout>
+            <VerticalStackLayout IsVisible="{Binding IsEmpty}" Style="{StaticResource EmptyStateLayout}">
+                <Label Text="Nessuna categoria" IsVisible="{Binding IsActiveView}" Style="{StaticResource TitleLarge}" />
+                <Label Text="Creane una per iniziare." IsVisible="{Binding IsActiveView}" Style="{StaticResource BodyMedium}" />
+                <Label Text="Nessuna categoria archiviata" IsVisible="{Binding IsArchivedView}" Style="{StaticResource TitleLarge}" />
+                <Label Text="Le categorie archiviate compariranno qui." IsVisible="{Binding IsArchivedView}" Style="{StaticResource BodyMedium}" />
+            </VerticalStackLayout>
+            <CollectionView ItemsSource="{Binding DisplayedCategories}" IsVisible="{Binding HasCategories}" SelectionMode="None" Margin="0,8,0,0">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="52,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="14" Padding="0,12">
+                            <Border Grid.RowSpan="2" Style="{StaticResource CategoryIconContainer}" WidthRequest="52" HeightRequest="52" BackgroundColor="{Binding Color}">
+                                <Image Source="{Binding Icon, Converter={StaticResource CategoryIconSourceConverter}}" Style="{StaticResource CategoryIconImage}" />
+                            </Border>
+                            <Label Grid.Column="1" Text="{Binding Name}" Style="{StaticResource TitleMedium}" VerticalOptions="End" />
+                            <Label Grid.Row="1" Grid.Column="1" Text="{Binding BudgetText}" Style="{StaticResource BodyMedium}" VerticalOptions="Start" />
+                            <Button Grid.Column="2" Grid.RowSpan="2" Text="⋯" Style="{StaticResource IconButton}" IsVisible="{Binding BindingContext.IsActiveView, Source={RelativeSource AncestorType={x:Type ContentPage}}}" Clicked="OnArchiveClicked" CommandParameter="{Binding .}" />
+                            <Button Grid.Column="2" Grid.RowSpan="2" Text="Ripristina" Style="{StaticResource TextActionButton}" IsVisible="{Binding BindingContext.IsArchivedView, Source={RelativeSource AncestorType={x:Type ContentPage}}}" Clicked="OnRestoreClicked" CommandParameter="{Binding .}" />
+                            <Button Grid.RowSpan="2" Grid.ColumnSpan="2" BackgroundColor="Transparent" Text="" IsVisible="{Binding BindingContext.IsActiveView, Source={RelativeSource AncestorType={x:Type ContentPage}}}" Clicked="OnEditClicked" CommandParameter="{Binding .}" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
+        <Button Grid.Row="3" Text="＋  Nuova categoria" IsVisible="{Binding IsActiveView}" Style="{StaticResource PrimaryActionButton}" Clicked="OnNewCategoryClicked" />
+    </Grid>
 </ContentPage>

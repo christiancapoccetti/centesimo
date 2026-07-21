@@ -40,4 +40,22 @@ public sealed class CategoryRepository_should_expected_behavior
         Assert.Equal("home", stored.Icon);
         Assert.True(stored.IsArchived);
     }
+
+    [Fact]
+    public async Task Restore_an_archived_category()
+    {
+        using var database = new TestDatabase();
+        var repository = new CategoryRepository(database.Context);
+        var category = new Category(Guid.NewGuid(), "Groceries", "cart", "#123456");
+        category.Archive();
+        await repository.Add(category);
+        database.Context.ChangeTracker.Clear();
+        category.Restore();
+
+        await repository.Update(category);
+        database.Context.ChangeTracker.Clear();
+        var stored = await database.Context.Categories.AsNoTracking().SingleAsync();
+
+        Assert.False(stored.IsArchived);
+    }
 }

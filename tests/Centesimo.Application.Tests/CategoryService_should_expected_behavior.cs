@@ -47,6 +47,59 @@ public sealed class CategoryService_should_expected_behavior
         Assert.True(updated.IsSuccess);
         Assert.Single(categories.Value);
         Assert.Equal("Dining", categories.Value[0].Name);
-    }}
+    }
+
+    [Fact]
+    public async Task Return_only_archived_categories_ordered_by_name()
+    {
+        var repository = new FakeCategoryRepository();
+        var first = new Category(Guid.NewGuid(), "Zaini", "cart", "#176B5B");
+        first.Archive();
+        var second = new Category(Guid.NewGuid(), "Auto", "car", "#6A4F88");
+        second.Archive();
+        repository.Items.AddRange([first, new Category(Guid.NewGuid(), "Cibo", "food", "#8B4A5D"), second]);
+        var service = new CategoryService(repository);
+
+        var categories = await service.GetArchived();
+
+        Assert.Equal(["Auto", "Zaini"], categories.Value.Select(category => category.Name));
+    }
+
+    [Fact]
+    public async Task Restore_archived_category()
+    {
+        var repository = new FakeCategoryRepository();
+        var category = new Category(Guid.NewGuid(), "Cibo", "cart", "#176B5B");
+        category.Archive();
+        repository.Items.Add(category);
+        var service = new CategoryService(repository);
+
+        var result = await service.Restore(category.CategoryId);
+
+        Assert.True(result.IsSuccess);
+        Assert.False(category.IsArchived);
+    }
+
+    [Fact]
+    public async Task Propagate_repository_failure_when_restoring_category()
+    {
+        var repository = new FakeCategoryRepository { Failure = InfrastructureErrors.Unexpected };
+        var service = new CategoryService(repository);
+
+        var result = await service.Restore(Guid.NewGuid());
+
+        Assert.Equal("Infrastructure.Unexpected", result.Error.Code);
+    }
+
+    [Fact]
+    public async Task Return_not_found_when_restoring_missing_category()
+    {
+        var service = new CategoryService(new FakeCategoryRepository());
+
+        var result = await service.Restore(Guid.NewGuid());
+
+        Assert.Equal("Category.NotFound", result.Error.Code);
+    }
+}
 
 
