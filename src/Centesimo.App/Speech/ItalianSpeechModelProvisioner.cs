@@ -28,7 +28,8 @@ public sealed class ItalianSpeechModelProvisioner : IItalianSpeechModelProvision
             await using var asset = await FileSystem.OpenAppPackageFileAsync($"{ModelName}.zip");
             using var archive = new ZipArchive(asset, ZipArchiveMode.Read);
             var entries = archive.Entries.Where(entry => !string.IsNullOrEmpty(entry.Name)).ToList();
-            if (entries.Count == 0 || archive.Entries.Any(entry => !ZipEntryPathSafety.IsSafe(entry.FullName)))
+            if (entries.Count == 0 || archive.Entries.Any(entry => !ZipEntryPathSafety.IsSafe(entry.FullName)) ||
+                !ZipEntryPathSafety.HasExpectedModelLayout(archive.Entries.Select(entry => entry.FullName), ModelName))
                 return Result.Failure(new Error("Speech.ModelInvalid", "Il modello incluso non è valido."));
 
             for (var index = 0; index < entries.Count; index++)
@@ -44,7 +45,8 @@ public sealed class ItalianSpeechModelProvisioner : IItalianSpeechModelProvision
             }
 
             var extracted = Path.Combine(temporary, ModelName);
-            if (!Directory.Exists(extracted))
+            if (!File.Exists(Path.Combine(extracted, "am", "final.mdl")) ||
+                !File.Exists(Path.Combine(extracted, "conf", "model.conf")))
                 return Result.Failure(new Error("Speech.ModelInvalid", "Il modello incluso non è valido."));
 
             Directory.CreateDirectory(FileSystem.AppDataDirectory);
@@ -61,6 +63,8 @@ public sealed class ItalianSpeechModelProvisioner : IItalianSpeechModelProvision
         }
         finally
         {
+            if (Directory.Exists(ModelPath) && !File.Exists(Path.Combine(ModelPath, "am", "final.mdl")))
+                Directory.Delete(ModelPath, true);
             if (Directory.Exists(temporary))
                 Directory.Delete(temporary, true);
         }

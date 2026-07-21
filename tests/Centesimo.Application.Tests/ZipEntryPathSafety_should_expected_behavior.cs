@@ -13,4 +13,18 @@ public sealed class ZipEntryPathSafety_should_expected_behavior
 
         Assert.Equal(path == "vosk-model-small-it-0.22/am/final.mdl", safe);
     }
+
+    [Fact]
+    public void Accept_model_archive_root_and_required_markers()
+    {
+        var entries = new[]
+        {
+            "vosk-model-small-it-0.22/",
+            "vosk-model-small-it-0.22/am/final.mdl",
+            "vosk-model-small-it-0.22/conf/model.conf"
+        };
+
+        Assert.All(entries, entry => Assert.True(ZipEntryPathSafety.IsSafe(entry)));
+        Assert.True(ZipEntryPathSafety.HasExpectedModelLayout(entries, "vosk-model-small-it-0.22"));
+    }
 }
