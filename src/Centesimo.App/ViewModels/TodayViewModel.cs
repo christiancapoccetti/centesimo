@@ -14,6 +14,11 @@ public sealed class TodayViewModel(MonthlyOverviewService overviewService) : Obs
     private string _monthlyTotal = FormatMoney(0);
     private string _budgetSummary = "Nessun budget impostato";
     private double _budgetProgress;
+    private bool _isSpeechSheetVisible;
+    private bool _isSpeechListening;
+    private bool _isSpeechProcessing;
+    private string _speechTranscription = "Parla ora, poi premi Ferma registrazione.";
+    private string _speechErrorMessage = "";
 
     private static DateOnly CurrentMonth => new(DateTime.Today.Year, DateTime.Today.Month, 1);
 
@@ -47,6 +52,12 @@ public sealed class TodayViewModel(MonthlyOverviewService overviewService) : Obs
     public bool IsExpenseEmpty => !IsLoading && !HasError && !HasExpenses;
     public bool CanGoPrevious => !IsLoading;
     public bool CanGoNext => !IsLoading && MonthlyNavigation.CanGoNext(_selectedMonth, CurrentMonth);
+    public bool IsSpeechSheetVisible { get => _isSpeechSheetVisible; set => SetProperty(ref _isSpeechSheetVisible, value); }
+    public bool IsSpeechListening { get => _isSpeechListening; set => SetProperty(ref _isSpeechListening, value); }
+    public bool IsSpeechProcessing { get => _isSpeechProcessing; set => SetProperty(ref _isSpeechProcessing, value); }
+    public string SpeechTranscription { get => _speechTranscription; set => SetProperty(ref _speechTranscription, value); }
+    public string SpeechErrorMessage { get => _speechErrorMessage; set { if (SetProperty(ref _speechErrorMessage, value)) OnPropertyChanged(nameof(HasSpeechError)); } }
+    public bool HasSpeechError => SpeechErrorMessage.HasValue();
 
     public Task Load() => LoadMonth(_selectedMonth);
 

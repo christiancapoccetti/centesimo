@@ -15,6 +15,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<MoneyManagerImportService>();
         services.AddScoped<RecurringPaymentService>();
         services.AddScoped<UpcomingRecurringPaymentService>();
+        services.AddSingleton<ExpenseSpeechCommandParser>();
+        services.AddSingleton<ExpenseSpeechDraftResolver>();
+        services.AddSingleton<IPendingExpenseSpeechDraft, PendingExpenseSpeechDraft>();
         return services;
     }
 }

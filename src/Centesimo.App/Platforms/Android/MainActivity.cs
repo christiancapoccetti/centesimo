@@ -1,6 +1,7 @@
 ﻿using Android.App;
 using Android.Content.PM;
 using Android.OS;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Centesimo.App;
 
@@ -11,6 +12,30 @@ public class MainActivity : MauiAppCompatActivity
     {
         base.OnCreate(savedInstanceState);
         RequestNotificationPermission();
+    }
+
+    protected override void OnStop()
+    {
+        CancelVoiceRecognition();
+        base.OnStop();
+    }
+
+    private void CancelVoiceRecognition() => _ = CancelVoiceRecognitionSafely();
+
+    private static async Task CancelVoiceRecognitionSafely()
+    {
+        try
+        {
+            var platformApplication = IPlatformApplication.Current;
+            if (platformApplication is null)
+                return;
+
+            var recognizer = platformApplication.Services.GetRequiredService<IOfflineSpeechRecognizer>();
+            await recognizer.Cancel();
+        }
+        catch (Exception)
+        {
+        }
     }
 
     private void RequestNotificationPermission()
