@@ -16,6 +16,7 @@ public sealed class ItalianSpeechModelProvisioner : IItalianSpeechModelProvision
     private const string ModelUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin";
     private const string ModelSha1 = "6fe57ddcfdd1c6b07cdcc73aaf620810ce5fc771";
     private static readonly HttpClient Client = new();
+    private readonly SemaphoreSlim _preparationGate = new(1, 1);
     private bool? _isAvailable;
     private string ModelPath => Path.Combine(FileSystem.AppDataDirectory, ModelName);
     public bool IsAvailable => _isAvailable ??= IsValid(ModelPath);
@@ -25,6 +26,22 @@ public sealed class ItalianSpeechModelProvisioner : IItalianSpeechModelProvision
         if (IsAvailable)
             return Result.Success();
 
+        await _preparationGate.WaitAsync(cancellationToken);
+        try
+        {
+            if (IsAvailable)
+                return Result.Success();
+
+            return await PrepareModel(progress, cancellationToken);
+        }
+        finally
+        {
+            _preparationGate.Release();
+        }
+    }
+
+    private async Task<Result> PrepareModel(IProgress<double>? progress, CancellationToken cancellationToken)
+    {
         var temporary = Path.Combine(FileSystem.CacheDirectory, $"{ModelName}-{Guid.NewGuid():N}");
         try
         {
