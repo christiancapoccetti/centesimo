@@ -34,7 +34,7 @@ public sealed partial class ExpenseSpeechCommandParser
     [GeneratedRegex(@"(?:(?:di|da)\s+)?(?<amount>\d+(?:[,.]\d{1,2})?)\s*(?:€|euro|eur)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex AmountPattern();
 
-    [GeneratedRegex(@"(?<amount>[a-zàèéìòù\s]+)\s*(?:euro|eur)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"(?<amount>zero|uno|due|tre|quattro|cinque|dieci|venti|cinquanta|cento|centoventi|mille(?:\s+duecento)?|milleduecento)\s*(?:euro|eur)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex SpokenAmountPattern();
 
     [GeneratedRegex(@"(?:(?:alla|nella|in)\s+categoria|categoria|spesa\s+(?:su|in)|(?:su|in))\s+(?<category>.+?)(?=\s+(?:sotto\s+)?tag\s+|\s+con\s+nota\s+|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
