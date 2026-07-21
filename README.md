@@ -1,8 +1,10 @@
 # Centesimo
 
-Centesimo is a simple, privacy-first Android expense tracker built with .NET MAUI. It focuses on making manual expense entry fast while keeping all financial data on the device.
+Centesimo is a fully vibe-coded app created to explore and test the capabilities of Codex. It is an experimental project, built end to end through an AI-assisted development workflow.
 
-## Base MVP
+It is also a simple, privacy-first Android expense tracker built with .NET MAUI. Its goal is to make manual expense entry quick while keeping financial data on the device.
+
+## Features
 
 - Create, edit, and archive expense categories with optional monthly budgets.
 - Create and archive tags within a category.
@@ -12,7 +14,7 @@ Centesimo is a simple, privacy-first Android expense tracker built with .NET MAU
 - Configure weekly, monthly, or yearly recurring payments, with optional end dates. Due expenses are created when the app is opened, and upcoming payments generate Android notifications.
 - Store application data locally in SQLite. Centesimo does not require an account or send financial data to a remote service.
 
-Receipt photos, voice control, localization, backups, and additional insights are intentionally deferred. See [FUTURE.md](FUTURE.md) for the current roadmap.
+Receipt photos, voice control, localization, backups, and additional insights are not part of the current version. See [FUTURE.md](FUTURE.md) for the roadmap.
 
 ## Architecture
 
