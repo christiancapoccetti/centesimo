@@ -91,7 +91,7 @@ public partial class TodayPage : ContentPage
             if (!_viewModel.IsSpeechReady)
                 return Result.Failure(new Centesimo.Application.Error("Speech.Preparing", "Il riconoscimento vocale è ancora in preparazione."));
 
-            var permission = await Permissions.RequestAsync<Permissions.Microphone>();
+            var permission = await RequestMicrophonePermission();
             if (permission != PermissionStatus.Granted)
                 return Result.Failure(new Centesimo.Application.Error("Speech.MicrophoneDenied", "Consenti l'accesso al microfono per usare i comandi vocali."));
 
@@ -113,6 +113,22 @@ public partial class TodayPage : ContentPage
         {
             return Result.Failure(new Centesimo.Application.Error("Speech.StartFailed", "Non riesco ad avviare il riconoscimento vocale."));
         }
+    }
+
+    private async Task<PermissionStatus> RequestMicrophonePermission()
+    {
+        var status = await Permissions.CheckStatusAsync<Permissions.Microphone>();
+        if (status == PermissionStatus.Granted)
+            return status;
+
+        var accepted = await DisplayAlertAsync(
+            "Microfono",
+            "Centesimo usa il microfono solo mentre tieni premuto il pulsante dei comandi vocali. L'audio viene elaborato sul dispositivo e non viene inviato online.",
+            "Consenti",
+            "Non ora");
+        return accepted
+            ? await Permissions.RequestAsync<Permissions.Microphone>()
+            : status;
     }
 
     private async void OnSpeechReleased(object? sender, EventArgs e)

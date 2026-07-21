@@ -11,7 +11,6 @@ public class MainActivity : MauiAppCompatActivity
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
-        RequestNotificationPermission();
     }
 
     protected override void OnStop()
@@ -38,20 +37,4 @@ public class MainActivity : MauiAppCompatActivity
         }
     }
 
-    private void RequestNotificationPermission()
-    {
-        if (!OperatingSystem.IsAndroidVersionAtLeast(33))
-            return;
-
-        RequestAndroid13NotificationPermission();
-    }
-
-    [System.Runtime.Versioning.SupportedOSPlatform("android33.0")]
-    private void RequestAndroid13NotificationPermission()
-    {
-        if (CheckSelfPermission(Android.Manifest.Permission.PostNotifications) == Permission.Granted)
-            return;
-
-        RequestPermissions([Android.Manifest.Permission.PostNotifications], 1);
-    }
 }
