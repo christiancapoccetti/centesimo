@@ -15,10 +15,6 @@ Items are not commitments and will be prioritized after the core manual expense 
 - Support English in addition to Italian.
 - Format currency, dates, and numbers according to the selected locale.
 
-## Category management
-
-- Browse and restore archived categories.
-
 ## Attachments
 
 - Capture or select receipt photos.

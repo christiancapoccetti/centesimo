@@ -6,7 +6,7 @@ It is also a simple, privacy-first Android expense tracker built with .NET MAUI.
 
 ## Features
 
-- Create, edit, and archive expense categories with optional monthly budgets.
+- Create, edit, archive, and restore expense categories with optional monthly budgets. Archived categories are unavailable for new expenses, while existing expenses retain their category.
 - Create and archive tags within a category.
 - Add expenses with an amount, date, category, optional tag, and optional note.
 - Browse monthly expense history, then edit or delete an expense.
