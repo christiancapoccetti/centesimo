@@ -120,6 +120,50 @@ public sealed class InsightsService_should_expected_behavior
         Assert.Contains(result.Value.Insights, x => x.Kind == InsightKind.UnusualExpense && x.ExpenseId.HasValue);
     }
 
+    [Fact]
+    public async Task Should_compare_march_first_with_matching_calendar_day_after_leap_year()
+    {
+        var category = new Category(Guid.NewGuid(), "Spesa", "cart", "#196D61");
+        var expenses = new FakeExpenseRepository();
+        expenses.Items.AddRange([
+            new Expense(Guid.NewGuid(), category.CategoryId, new Money(1000), new DateOnly(2025, 3, 1)),
+            new Expense(Guid.NewGuid(), category.CategoryId, new Money(700), new DateOnly(2024, 3, 1)),
+            new Expense(Guid.NewGuid(), category.CategoryId, new Money(900), new DateOnly(2024, 2, 29)),
+            new Expense(Guid.NewGuid(), category.CategoryId, new Money(300), new DateOnly(2024, 3, 2))
+        ]);
+
+        var result = await CreateService(new DateOnly(2025, 3, 1), category, expenses).Get(InsightPeriod.Year);
+
+        Assert.Equal(1600, result.Value.ComparedSpentCents);
+    }
+
+    [Fact]
+    public async Task Should_not_compare_february_twenty_ninth_when_previous_year_has_no_matching_date()
+    {
+        var category = new Category(Guid.NewGuid(), "Spesa", "cart", "#196D61");
+        var expenses = new FakeExpenseRepository();
+        expenses.Items.Add(new Expense(Guid.NewGuid(), category.CategoryId, new Money(1000), new DateOnly(2024, 2, 29)));
+
+        var result = await CreateService(new DateOnly(2024, 2, 29), category, expenses).Get(InsightPeriod.Year);
+
+        Assert.Null(result.Value.ComparedSpentCents);
+    }
+
+    [Theory]
+    [InlineData(29)]
+    [InlineData(30)]
+    [InlineData(31)]
+    public async Task Should_not_compare_march_month_end_when_previous_non_leap_february_has_no_matching_day(int day)
+    {
+        var category = new Category(Guid.NewGuid(), "Spesa", "cart", "#196D61");
+        var expenses = new FakeExpenseRepository();
+        expenses.Items.Add(new Expense(Guid.NewGuid(), category.CategoryId, new Money(1000), new DateOnly(2025, 3, day)));
+
+        var result = await CreateService(new DateOnly(2025, 3, day), category, expenses).Get(InsightPeriod.Month);
+
+        Assert.Null(result.Value.ComparedSpentCents);
+    }
+
     private static InsightsService CreateService(DateOnly today, Category? category = null, FakeExpenseRepository? expenses = null) =>
         CreateService(today, category is null ? [] : [category], expenses);
 

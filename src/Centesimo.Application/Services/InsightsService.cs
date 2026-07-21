@@ -44,7 +44,9 @@ public sealed class InsightsService(ICategoryRepository categories, IExpenseRepo
         if (currentResult.IsFailure)
             return Result<InsightsOverview>.Failure(currentResult.Error);
 
-        var previousResult = await expenses.GetBetween(previousFrom, previousTo, cancellationToken);
+        var previousResult = previousFrom.HasValue
+            ? await expenses.GetBetween(previousFrom.Value, previousTo!.Value, cancellationToken)
+            : Result<IReadOnlyList<Expense>>.Success([]);
         if (previousResult.IsFailure)
             return Result<InsightsOverview>.Failure(previousResult.Error);
 
@@ -54,13 +56,13 @@ public sealed class InsightsService(ICategoryRepository categories, IExpenseRepo
         var total = currentExpenses.Sum(x => x.Amount.Cents);
         var previousTotal = previousExpenses.Sum(x => x.Amount.Cents);
         long? comparable = previousTotal > 0 ? previousTotal : null;
-        var categoryItems = currentExpenses
+        var categoryItems = currentExpenses.Concat(previousExpenses)
             .GroupBy(x => x.CategoryId)
             .Where(x => activeCategories.ContainsKey(x.Key))
             .Select(group =>
             {
                 var category = activeCategories[group.Key];
-                var spent = group.Sum(x => x.Amount.Cents);
+                var spent = currentExpenses.Where(x => x.CategoryId == group.Key).Sum(x => x.Amount.Cents);
                 var prior = previousExpenses.Where(x => x.CategoryId == group.Key).Sum(x => x.Amount.Cents);
                 return new InsightCategory(category.CategoryId, category.Name, category.Icon, category.Color, spent,
                     total == 0 ? 0 : (double)spent / total, prior == 0 ? null : prior,
@@ -74,19 +76,24 @@ public sealed class InsightsService(ICategoryRepository categories, IExpenseRepo
             trend, categoryItems, localInsights));
     }
 
-    private static (DateOnly From, DateOnly To, DateOnly PreviousFrom, DateOnly PreviousTo) GetRanges(InsightPeriod period, DateOnly today)
+    private static (DateOnly From, DateOnly To, DateOnly? PreviousFrom, DateOnly? PreviousTo) GetRanges(InsightPeriod period, DateOnly today)
     {
         if (period == InsightPeriod.Month)
         {
             var from = new DateOnly(today.Year, today.Month, 1);
             var previousFrom = from.AddMonths(-1);
             var previousTo = previousFrom.AddMonths(1).AddDays(-1);
-            return (from, today, previousFrom, previousFrom.AddDays(Math.Min(today.Day, previousTo.Day) - 1));
+            if (today.Day > previousTo.Day)
+                return (from, today, null, null);
+            return (from, today, previousFrom, previousFrom.AddDays(today.Day - 1));
         }
 
         var yearStart = new DateOnly(today.Year, 1, 1);
         var previousYearStart = yearStart.AddYears(-1);
-        return (yearStart, today, previousYearStart, previousYearStart.AddDays(today.DayOfYear - 1));
+        if (today.Month == 2 && today.Day == 29 && !DateTime.IsLeapYear(today.Year - 1))
+            return (yearStart, today, null, null);
+        var previousYearTo = new DateOnly(today.Year - 1, today.Month, today.Day);
+        return (yearStart, today, previousYearStart, previousYearTo);
     }
 
     private static IReadOnlyList<InsightTrendPoint> BuildTrend(InsightPeriod period, DateOnly from, DateOnly to, IReadOnlyList<Expense> expenses)
@@ -133,6 +140,8 @@ public sealed class InsightsService(ICategoryRepository categories, IExpenseRepo
             insights.Add(new LocalInsight(InsightKind.UnusualExpense, "Una spesa da rivedere", $"{unusual.Maximum.Amount.Cents / 100m:0.00} € per {unusualCategory.Name} è sensibilmente più alta delle altre spese della categoria.", unusualCategory.CategoryId, unusual.Maximum.ExpenseId));
         if (previousTotal > 0 && Math.Abs((double)(total - previousTotal.Value) / previousTotal.Value) < .1)
             insights.Add(new LocalInsight(InsightKind.Stable, "Spese stabili", "Il totale è simile al periodo precedente."));
-        return insights.Take(3).ToList();
+        return insights
+            .OrderBy(x => x.Kind is InsightKind.UnusualExpense or InsightKind.NewHabit ? 0 : 1)
+            .ToList();
     }
 }

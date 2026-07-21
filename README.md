@@ -13,9 +13,10 @@ It is also a simple, privacy-first Android expense tracker built with .NET MAUI.
 - Review current-month spending and category budget progress from the today dashboard.
 - Configure weekly, monthly, or yearly recurring payments, with optional end dates. Due expenses are created when the app is opened, and upcoming payments generate Android notifications.
 - Create an expense draft by voice on Android, with a multilingual Whisper model downloaded once and kept local, plus explicit confirmation in the expense editor.
+- Review local spending trends, category comparisons, and history-based insights for the current month or year.
 - Store application data locally in SQLite. Centesimo does not require an account or send financial data to a remote service.
 
-Receipt photos, localization, backups, and additional insights are not part of the current version. See [FUTURE.md](FUTURE.md) for the roadmap.
+Receipt photos, localization, backups, and configurable budget alerts are not part of the current version. See [FUTURE.md](FUTURE.md) for the roadmap.
 
 ## Architecture
 
