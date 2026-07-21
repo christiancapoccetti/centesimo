@@ -49,7 +49,7 @@
             <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
             <Label Text="{Binding Message}" IsVisible="{Binding HasMessage}" TextColor="{Binding HasError, Converter={StaticResource ImportMessageColorConverter}}" />
             <Label Text="APP" Style="{StaticResource LabelLarge}" TextColor="{StaticResource PrimaryLight}" />
-            <Border Style="{StaticResource SurfaceCard}" Padding="16"><Grid ColumnDefinitions="*,Auto"><Label Text="Versione 1.0" Style="{StaticResource BodyMedium}" /><Label Grid.Column="1" Text="›" Style="{StaticResource TitleLarge}" TextColor="{StaticResource PrimaryLight}" /></Grid></Border>
+            <Border Style="{StaticResource SurfaceCard}" Padding="16"><VerticalStackLayout Spacing="8"><Grid ColumnDefinitions="*,Auto"><Label Text="Versione 1.0" Style="{StaticResource BodyMedium}" /><Label Grid.Column="1" Text="›" Style="{StaticResource TitleLarge}" TextColor="{StaticResource PrimaryLight}" /></Grid><Button Text="Licenza e codice sorgente" Style="{StaticResource TextActionButton}" HorizontalOptions="Start" Clicked="OnLicenseClicked" /></VerticalStackLayout></Border>
             <VerticalStackLayout Spacing="8" Margin="0,12,0,0"><Label Text="LICENZE OPEN SOURCE" Style="{StaticResource LabelLarge}" TextColor="{StaticResource PrimaryLight}" /><Label Text="Consulta gli avvisi e le licenze dei componenti utilizzati dall'app." Style="{StaticResource BodyMedium}" /><Button Text="Visualizza licenze" Style="{StaticResource TextActionButton}" HorizontalOptions="Start" Clicked="OnOpenSourceLicensesClicked" /></VerticalStackLayout>
         </VerticalStackLayout>
     </ScrollView>

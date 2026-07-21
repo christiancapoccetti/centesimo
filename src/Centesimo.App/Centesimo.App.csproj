@@ -25,6 +25,7 @@
     <MauiFont Include="Resources\Fonts\*" />
     <MauiImage Include="Resources\Images\*.svg" />
     <MauiAsset Include="Resources\Raw\*" LogicalName="%(Filename)%(Extension)" />
+    <MauiAsset Include="..\..\LICENSE" LogicalName="GPL-3.0.txt" />
   </ItemGroup>
 
   <ItemGroup>

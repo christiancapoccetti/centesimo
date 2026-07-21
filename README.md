@@ -71,3 +71,4 @@ Recognized commands use a predictable grammar with a numeric amount and an expli
 ## License
 
 Centesimo is licensed under the [GNU General Public License v3.0](LICENSE).
+The corresponding source code for distributed APKs is available as described in [SOURCE_OFFER.md](SOURCE_OFFER.md).

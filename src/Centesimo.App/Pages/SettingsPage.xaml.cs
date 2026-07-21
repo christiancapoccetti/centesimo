@@ -46,4 +46,7 @@ public partial class SettingsPage : ContentPage
 
     private async void OnOpenSourceLicensesClicked(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync(nameof(OpenSourceLicensesPage));
+
+    private async void OnLicenseClicked(object? sender, EventArgs e) =>
+        await Shell.Current.GoToAsync(nameof(LicensePage));
 }
