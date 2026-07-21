@@ -6,7 +6,7 @@ namespace Centesimo.App;
 
 public interface IItalianSpeechModelProvisioner
 {
-    bool IsAvailable { get; }
+    Task<bool> IsAvailable(CancellationToken cancellationToken = default);
     Task<Result> Prepare(IProgress<double>? progress = null, CancellationToken cancellationToken = default);
 }
 
@@ -19,17 +19,24 @@ public sealed class ItalianSpeechModelProvisioner : IItalianSpeechModelProvision
     private readonly SemaphoreSlim _preparationGate = new(1, 1);
     private bool? _isAvailable;
     private string ModelPath => Path.Combine(FileSystem.AppDataDirectory, ModelName);
-    public bool IsAvailable => _isAvailable ??= IsValid(ModelPath);
+    public async Task<bool> IsAvailable(CancellationToken cancellationToken = default)
+    {
+        if (_isAvailable.HasValue)
+            return _isAvailable.Value;
+
+        _isAvailable = await Task.Run(() => IsValid(ModelPath), cancellationToken);
+        return _isAvailable.Value;
+    }
 
     public async Task<Result> Prepare(IProgress<double>? progress = null, CancellationToken cancellationToken = default)
     {
-        if (IsAvailable)
+        if (await IsAvailable(cancellationToken))
             return Result.Success();
 
         await _preparationGate.WaitAsync(cancellationToken);
         try
         {
-            if (IsAvailable)
+            if (await IsAvailable(cancellationToken))
                 return Result.Success();
 
             return await PrepareModel(progress, cancellationToken);
@@ -49,24 +56,26 @@ public sealed class ItalianSpeechModelProvisioner : IItalianSpeechModelProvision
             if (!response.IsSuccessStatusCode)
                 return Result.Failure(new Error("Speech.ModelDownloadFailed", "Non riesco a scaricare il modello italiano."));
 
-            await using var source = await response.Content.ReadAsStreamAsync(cancellationToken);
-            await using var target = File.Create(temporary);
-            var buffer = new byte[81_920];
-            var copied = 0L;
-            while (true)
+            await using (var source = await response.Content.ReadAsStreamAsync(cancellationToken))
+            await using (var target = File.Create(temporary))
             {
-                var read = await source.ReadAsync(buffer, cancellationToken);
-                if (read == 0)
-                    break;
+                var buffer = new byte[81_920];
+                var copied = 0L;
+                while (true)
+                {
+                    var read = await source.ReadAsync(buffer, cancellationToken);
+                    if (read == 0)
+                        break;
 
-                await target.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
-                copied += read;
-                if (response.Content.Headers.ContentLength is { } length && length > 0)
-                    progress?.Report((double)copied / length);
+                    await target.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                    copied += read;
+                    if (response.Content.Headers.ContentLength is { } length && length > 0)
+                        progress?.Report((double)copied / length);
+                }
+
+                await target.FlushAsync(cancellationToken);
             }
-
-            await target.FlushAsync(cancellationToken);
-            if (!IsValid(temporary))
+            if (!await Task.Run(() => IsValid(temporary), cancellationToken))
                 return Result.Failure(new Error("Speech.ModelIntegrityFailed", "Il modello scaricato non è valido. Riprova."));
 
             Directory.CreateDirectory(FileSystem.AppDataDirectory);

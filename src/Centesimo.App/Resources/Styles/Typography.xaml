@@ -43,6 +43,12 @@
         <Setter Property="LineHeight" Value="1.4" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
     </Style>
+    <Style x:Key="BodySmall" TargetType="Label">
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="LineHeight" Value="1.3" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnSurfaceVariantLight}, Dark={StaticResource OnSurfaceVariantDark}}" />
+    </Style>
     <Style x:Key="LabelLarge" TargetType="Label">
         <Setter Property="FontFamily" Value="OpenSansSemibold" />
         <Setter Property="FontSize" Value="14" />

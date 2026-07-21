@@ -10,6 +10,14 @@
                 <Label Text="Impostazioni" Style="{StaticResource HeadlineLarge}" />
                 <Label Text="Gestisci dati e automazioni locali." Style="{StaticResource BodyMedium}" />
             </VerticalStackLayout>
+            <Label Text="COMANDI VOCALI" Style="{StaticResource LabelLarge}" TextColor="{StaticResource PrimaryLight}" />
+            <Border Style="{StaticResource SurfaceCard}" Padding="16">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Riconoscimento vocale offline" Style="{StaticResource TitleLarge}" />
+                    <Label Text="{Binding SpeechPreparation.Message}" Style="{StaticResource BodyMedium}" />
+                    <ProgressBar Progress="{Binding SpeechPreparation.Progress}" IsVisible="{Binding SpeechPreparation.IsPreparing}" HeightRequest="6" ProgressColor="{StaticResource PrimaryLight}" />
+                </VerticalStackLayout>
+            </Border>
             <Label Text="AUTOMAZIONI" Style="{StaticResource LabelLarge}" TextColor="{StaticResource PrimaryLight}" />
             <Border Style="{StaticResource SurfaceCard}" Padding="16">
                 <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnRecurringPaymentsTapped" /></Border.GestureRecognizers>

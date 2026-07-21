@@ -6,6 +6,7 @@ public interface IOfflineSpeechRecognizer
 {
     event EventHandler<string>? TranscriptionUpdated;
     bool IsListening { get; }
+    Task<Result> WarmUp(CancellationToken cancellationToken = default);
     Task<Result> Start(CancellationToken cancellationToken = default);
     Task<Result<string>> Stop(CancellationToken cancellationToken = default);
     Task Cancel();
@@ -19,6 +20,7 @@ public sealed class UnavailableOfflineSpeechRecognizer : IOfflineSpeechRecognize
         remove { }
     }
     public bool IsListening => false;
+    public Task<Result> WarmUp(CancellationToken cancellationToken = default) => Task.FromResult(Result.Failure(new Error("Speech.Unsupported", "Il riconoscimento vocale è disponibile solo su Android.")));
 
     public Task<Result> Start(CancellationToken cancellationToken = default) =>
         Task.FromResult(Result.Failure(new Error("Speech.Unsupported", "Il riconoscimento vocale è disponibile solo su Android.")));

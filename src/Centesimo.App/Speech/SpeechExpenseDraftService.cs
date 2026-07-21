@@ -16,6 +16,9 @@ public sealed class SpeechExpenseDraftService(
         remove => recognizer.TranscriptionUpdated -= value;
     }
 
+    public Task<Result> WarmUp(CancellationToken cancellationToken = default) =>
+        recognizer.WarmUp(cancellationToken);
+
     public bool IsListening => recognizer.IsListening;
     public string LastTranscription { get; private set; } = "";
 

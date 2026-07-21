@@ -12,7 +12,7 @@ It is also a simple, privacy-first Android expense tracker built with .NET MAUI.
 - Browse monthly expense history, then edit or delete an expense.
 - Review current-month spending and category budget progress from the today dashboard.
 - Configure weekly, monthly, or yearly recurring payments, with optional end dates. Due expenses are created when the app is opened, and upcoming payments generate Android notifications.
-- Create an expense draft by voice on Android, with a multilingual Whisper model downloaded once on first use and kept local, plus explicit confirmation in the expense editor.
+- Create an expense draft by voice on Android, with a multilingual Whisper model downloaded once and kept local, plus explicit confirmation in the expense editor.
 - Store application data locally in SQLite. Centesimo does not require an account or send financial data to a remote service.
 
 Receipt photos, localization, backups, and additional insights are not part of the current version. See [FUTURE.md](FUTURE.md) for the roadmap.
@@ -61,7 +61,7 @@ Confirm that the target device is available with `adb devices` before running th
 
 ## Offline voice expense entry
 
-The microphone action records up to 20 seconds and transcribes only on the Android device with Whisper. On first use, the app downloads the multilingual `ggml-small-q5_1.bin` model (about 181 MiB) from the official whisper.cpp repository, verifies its checksum, and stores it privately for later offline use. Audio is kept in memory and discarded after recognition; no speech audio is uploaded. The loaded model remains available while the app process is running to reduce the delay for later commands.
+The microphone action records up to 20 seconds and transcribes only on the Android device with Whisper. When Home opens and no valid local model is available, the app asks whether to download the multilingual model (about 181 MiB). If accepted, it downloads, verifies, stores, and loads the model into memory asynchronously. The microphone remains unavailable until preparation completes; if download is declined, it stays disabled and tapping it asks again. After the model is ready, audio is kept in memory and discarded after recognition; no speech audio is uploaded or processed remotely. The loaded model remains available while the app process is running to reduce the delay for later commands.
 
 Offline voice entry currently requires an arm64 Android device.
 
