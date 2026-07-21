@@ -39,7 +39,7 @@ internal sealed class FakeRecurringPaymentRepository : IRecurringPaymentReposito
     public Task<Result> Add(RecurringPayment value, CancellationToken token = default) { Items.Add(value); return Task.FromResult(Result.Success()); }
     public Task<Result<RecurringPayment?>> Get(Guid id, CancellationToken token = default) => Task.FromResult(Result<RecurringPayment?>.Success(Items.SingleOrDefault(x => x.RecurringPaymentId == id)));
     public Task<Result<IReadOnlyList<RecurringPayment>>> GetAll(CancellationToken token = default) => Task.FromResult(Result<IReadOnlyList<RecurringPayment>>.Success(Items.OrderBy(x => x.NextDueOn).ToList()));
-    public Task<Result<IReadOnlyList<RecurringPayment>>> GetDue(DateOnly through, CancellationToken token = default) => Task.FromResult(Result<IReadOnlyList<RecurringPayment>>.Success(Items.Where(x => !x.IsSuspended && x.NextDueOn <= through).ToList()));
+    public Task<Result<IReadOnlyList<RecurringPayment>>> GetDue(DateOnly throughDate, CancellationToken token = default) => Task.FromResult(Result<IReadOnlyList<RecurringPayment>>.Success(Items.Where(x => !x.IsSuspended && x.NextDueOn <= throughDate && (!x.EndsOn.HasValue || x.NextDueOn <= x.EndsOn.Value)).ToList()));
     public Task<Result> Update(RecurringPayment value, CancellationToken token = default) => Task.FromResult(Result.Success());
 }
 

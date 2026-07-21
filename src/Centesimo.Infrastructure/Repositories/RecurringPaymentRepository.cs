@@ -23,11 +23,13 @@ public sealed class RecurringPaymentRepository(CentesimoDbContext context)
                 .OrderBy(payment => payment.NextDueOn)
                 .ToListAsync(token), cancellationToken);
 
-    public Task<Result<IReadOnlyList<RecurringPayment>>> GetDue(DateOnly through,
+    public Task<Result<IReadOnlyList<RecurringPayment>>> GetDue(DateOnly throughDate,
         CancellationToken cancellationToken = default) =>
         UseContext<IReadOnlyList<RecurringPayment>>(async (db, token) =>
             await db.RecurringPayments.AsNoTracking()
-                .Where(payment => !payment.IsSuspended && payment.NextDueOn <= through)
+                .Where(payment => !payment.IsSuspended
+                    && payment.NextDueOn <= throughDate
+                    && (!payment.EndsOn.HasValue || payment.NextDueOn <= payment.EndsOn.Value))
                 .ToListAsync(token), cancellationToken);
 
     public Task<Result> Update(RecurringPayment payment,
