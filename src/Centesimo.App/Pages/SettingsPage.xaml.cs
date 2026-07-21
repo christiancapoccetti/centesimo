@@ -13,8 +13,6 @@ public partial class SettingsPage : ContentPage
         BindingContext = viewModel;
     }
 
-    private async void OnRecurringPaymentsClicked(object? sender, EventArgs e) =>
-        await Shell.Current.GoToAsync(nameof(RecurringPaymentsPage));
     private async void OnRecurringPaymentsTapped(object? sender, TappedEventArgs e) =>
         await Shell.Current.GoToAsync(nameof(RecurringPaymentsPage));
 
