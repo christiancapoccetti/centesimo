@@ -19,6 +19,7 @@
     <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#176B5B" BaseSize="128,128" />
     <MauiFont Include="Resources\Fonts\*" />
     <MauiImage Include="Resources\Images\*.svg" />
+    <MauiAsset Include="Resources\Raw\*" LogicalName="%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

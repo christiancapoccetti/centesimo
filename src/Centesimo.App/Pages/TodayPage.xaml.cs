@@ -6,12 +6,14 @@ public partial class TodayPage : ContentPage
 {
     private readonly TodayViewModel _viewModel;
     private readonly SpeechExpenseDraftService _speechDraftService;
+    private readonly IItalianSpeechModelProvisioner _modelProvisioner;
 
-    public TodayPage(TodayViewModel viewModel, SpeechExpenseDraftService speechDraftService)
+    public TodayPage(TodayViewModel viewModel, SpeechExpenseDraftService speechDraftService, IItalianSpeechModelProvisioner modelProvisioner)
     {
         InitializeComponent();
         _viewModel = viewModel;
         _speechDraftService = speechDraftService;
+        _modelProvisioner = modelProvisioner;
         _speechDraftService.TranscriptionUpdated += OnTranscriptionUpdated;
         BindingContext = viewModel;
     }
@@ -68,6 +70,21 @@ public partial class TodayPage : ContentPage
     {
         try
         {
+            if (!_modelProvisioner.IsAvailable)
+            {
+                _viewModel.IsSpeechSheetVisible = true;
+                _viewModel.IsSpeechProcessing = true;
+                _viewModel.SpeechTranscription = "Preparazione del riconoscimento vocale…";
+                var progress = new Progress<double>(value => _viewModel.SpeechTranscription = $"Preparazione del modello: {value:P0}");
+                var provision = await _modelProvisioner.Prepare(progress);
+                _viewModel.IsSpeechProcessing = false;
+                if (provision.IsFailure)
+                {
+                    _viewModel.SpeechErrorMessage = provision.Error.Message;
+                    return;
+                }
+            }
+
             var permission = await Permissions.RequestAsync<Permissions.Microphone>();
             if (permission != PermissionStatus.Granted)
             {

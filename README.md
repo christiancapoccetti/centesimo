@@ -12,9 +12,10 @@ It is also a simple, privacy-first Android expense tracker built with .NET MAUI.
 - Browse monthly expense history, then edit or delete an expense.
 - Review current-month spending and category budget progress from the today dashboard.
 - Configure weekly, monthly, or yearly recurring payments, with optional end dates. Due expenses are created when the app is opened, and upcoming payments generate Android notifications.
+- Create an expense draft by voice on Android, with a locally installed Italian Vosk model and explicit confirmation in the expense editor.
 - Store application data locally in SQLite. Centesimo does not require an account or send financial data to a remote service.
 
-Receipt photos, voice control, localization, backups, and additional insights are not part of the current version. See [FUTURE.md](FUTURE.md) for the roadmap.
+Receipt photos, localization, backups, and additional insights are not part of the current version. See [FUTURE.md](FUTURE.md) for the roadmap.
 
 ## Architecture
 
@@ -60,9 +61,11 @@ Confirm that the target device is available with `adb devices` before running th
 
 ## Offline voice expense entry
 
-The microphone action records and transcribes only on the Android device with Vosk; audio is kept in memory and discarded after recognition. The Vosk Android runtime is packaged from Maven dependencies. To enable Italian recognition, provision the extracted `vosk-model-small-it-0.22` model directory in the app's private `AppDataDirectory` (the app shows an Italian message until it is available). The model is intentionally not committed to the repository or included in the APK.
+The microphone action records and transcribes only on the Android device with Vosk; audio is kept in memory and discarded after recognition. The Vosk Android runtime and the Italian `vosk-model-small-it-0.22` model are bundled in the APK. On first use, the app safely extracts the model into its private storage; this can take a moment but does not make a network request. No cloud inference is used.
 
-Recognized commands use a predictable grammar, for example: `Aggiungi spesa di 50 eur alla categoria spese auto, sotto tag tagliando`. The app only opens a prefilled editor after a unique active category/tag match; it never saves an expense automatically.
+The bundled model is the official [Vosk Italian small model](https://alphacephei.com/vosk/models/vosk-model-small-it-0.22.zip), listed by Vosk under the Apache 2.0 license. Its source archive is retained as `Resources/Raw/vosk-model-small-it-0.22.zip`.
+
+Recognized commands use a predictable grammar with a numeric amount and an explicit category, for example: `Aggiungi spesa di 50 eur alla categoria spese auto, sotto tag tagliando`. A tag and a note (`con nota ...`) are optional. The app only opens a prefilled editor after a unique active category/tag match; it never saves an expense automatically.
 
 ## License
 
