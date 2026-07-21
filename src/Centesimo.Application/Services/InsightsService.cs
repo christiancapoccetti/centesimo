@@ -1,4 +1,5 @@
 using Centesimo.Domain;
+using System.Globalization;
 
 namespace Centesimo.Application;
 
@@ -56,7 +57,7 @@ public sealed class InsightsService(ICategoryRepository categories, IExpenseRepo
         var total = currentExpenses.Sum(x => x.Amount.Cents);
         var previousTotal = previousExpenses.Sum(x => x.Amount.Cents);
         long? comparable = previousTotal > 0 ? previousTotal : null;
-        var categoryItems = currentExpenses.Concat(previousExpenses)
+        var comparisonCategories = currentExpenses.Concat(previousExpenses)
             .GroupBy(x => x.CategoryId)
             .Where(x => activeCategories.ContainsKey(x.Key))
             .Select(group =>
@@ -69,8 +70,9 @@ public sealed class InsightsService(ICategoryRepository categories, IExpenseRepo
                     prior == 0 ? null : ((double)(spent - prior) / prior));
             })
             .OrderByDescending(x => x.SpentCents).ThenBy(x => x.Name).ToList();
+        var categoryItems = comparisonCategories.Where(x => x.SpentCents > 0).ToList();
         var trend = BuildTrend(period, from, to, currentExpenses);
-        var localInsights = BuildInsights(categoryItems, currentExpenses, previousExpenses, total, comparable);
+        var localInsights = BuildInsights(comparisonCategories, currentExpenses, previousExpenses, total, comparable);
         return Result<InsightsOverview>.Success(new InsightsOverview(period, from, to, total, comparable,
             comparable is null ? null : (double)(total - comparable.Value) / comparable.Value,
             trend, categoryItems, localInsights));
@@ -98,14 +100,15 @@ public sealed class InsightsService(ICategoryRepository categories, IExpenseRepo
 
     private static IReadOnlyList<InsightTrendPoint> BuildTrend(InsightPeriod period, DateOnly from, DateOnly to, IReadOnlyList<Expense> expenses)
     {
+        var culture = CultureInfo.GetCultureInfo("it-IT");
         if (period == InsightPeriod.Month)
             return Enumerable.Range(0, to.DayNumber - from.DayNumber + 1)
                 .Select(offset => from.AddDays(offset))
-                .Select(day => new InsightTrendPoint(day.Day.ToString(), expenses.Where(x => x.OccurredOn == day).Sum(x => x.Amount.Cents)))
+                .Select(day => new InsightTrendPoint(day.ToDateTime(TimeOnly.MinValue).ToString("d MMM", culture), expenses.Where(x => x.OccurredOn == day).Sum(x => x.Amount.Cents)))
                 .ToList();
 
         return Enumerable.Range(1, to.Month)
-            .Select(month => new InsightTrendPoint(month.ToString(), expenses.Where(x => x.OccurredOn.Month == month).Sum(x => x.Amount.Cents)))
+            .Select(month => new InsightTrendPoint(new DateTime(from.Year, month, 1).ToString("MMMM", culture), expenses.Where(x => x.OccurredOn.Month == month).Sum(x => x.Amount.Cents)))
             .ToList();
     }
 

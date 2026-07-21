@@ -19,6 +19,32 @@ public sealed class InsightsService_should_expected_behavior
     }
 
     [Fact]
+    public async Task Should_not_render_category_that_only_has_previous_period_spending()
+    {
+        var category = new Category(Guid.NewGuid(), "Spesa", "cart", "#196D61");
+        var expenses = new FakeExpenseRepository();
+        expenses.Items.Add(new Expense(Guid.NewGuid(), category.CategoryId, new Money(1000), new DateOnly(2026, 6, 20)));
+
+        var result = await CreateService(new DateOnly(2026, 7, 20), category, expenses).Get(InsightPeriod.Month);
+
+        Assert.Empty(result.Value.Categories);
+    }
+
+    [Fact]
+    public async Task Should_use_italian_trend_labels()
+    {
+        var category = new Category(Guid.NewGuid(), "Spesa", "cart", "#196D61");
+        var expenses = new FakeExpenseRepository();
+        expenses.Items.Add(new Expense(Guid.NewGuid(), category.CategoryId, new Money(1000), new DateOnly(2026, 7, 20)));
+
+        var month = await CreateService(new DateOnly(2026, 7, 20), category, expenses).Get(InsightPeriod.Month);
+        var year = await CreateService(new DateOnly(2026, 7, 20), category, expenses).Get(InsightPeriod.Year);
+
+        Assert.Contains(month.Value.Trend, x => x.Label == "20 lug");
+        Assert.Contains(year.Value.Trend, x => x.Label == "luglio");
+    }
+
+    [Fact]
     public async Task Should_compare_current_month_with_same_elapsed_days_of_previous_month()
     {
         var category = new Category(Guid.NewGuid(), "Spesa", "cart", "#196D61");
