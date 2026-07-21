@@ -59,4 +59,13 @@ public sealed class ExpenseSpeechCommandParser_should_expected_behavior
     [Fact]
     public void Reject_unknown_spoken_amount_typo() =>
         Assert.True(_parser.Parse("Inserisci cinquata euro di spesa su lavoro").IsFailure);
+
+    [Fact]
+    public void Parse_spoken_amount_with_sul_category_connector()
+    {
+        var result = _parser.Parse("inserisci cinquanta euro di spesa sul lavoro");
+        Assert.True(result.IsSuccess);
+        Assert.Equal(50m, result.Value.Amount);
+        Assert.Equal("lavoro", result.Value.CategoryName);
+    }
 }
