@@ -2,10 +2,11 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using Centesimo.Application;
 using Centesimo.Domain;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Centesimo.App.ViewModels;
 
-public sealed class TodayViewModel(MonthlyOverviewService overviewService) : ObservableObject
+public sealed class TodayViewModel(IServiceScopeFactory scopeFactory) : ObservableObject
 {
     private static readonly CultureInfo ItalianCulture = CultureInfo.GetCultureInfo("it-IT");
     private DateOnly _selectedMonth = CurrentMonth;
@@ -96,7 +97,12 @@ public sealed class TodayViewModel(MonthlyOverviewService overviewService) : Obs
         IsLoading = true;
         ErrorMessage = "";
         NotifyNavigationState();
-        var result = await overviewService.Get(month.Year, month.Month);
+        Result<MonthlyOverview> result;
+        using (var scope = scopeFactory.CreateScope())
+        {
+            var overviewService = scope.ServiceProvider.GetRequiredService<MonthlyOverviewService>();
+            result = await overviewService.Get(month.Year, month.Month);
+        }
         Categories.Clear();
         Expenses.Clear();
         if (result.IsFailure)

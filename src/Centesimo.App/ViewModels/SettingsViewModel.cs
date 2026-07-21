@@ -1,10 +1,11 @@
 using Centesimo.Application;
 using Centesimo.App;
 using Centesimo.Domain;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Centesimo.App.ViewModels;
 
-public sealed class SettingsViewModel(MoneyManagerImportService importService, SpeechPreparationStatus speechPreparation) : ObservableObject
+public sealed class SettingsViewModel(IServiceScopeFactory scopeFactory, SpeechPreparationStatus speechPreparation) : ObservableObject
 {
     private bool _isBusy;
     private string _message = "";
@@ -47,7 +48,12 @@ public sealed class SettingsViewModel(MoneyManagerImportService importService, S
         ClearMessage();
         try
         {
-            var result = await importService.Preview(backup, cancellationToken);
+            Result<MoneyManagerImportPreview> result;
+            using (var scope = scopeFactory.CreateScope())
+            {
+                var importService = scope.ServiceProvider.GetRequiredService<MoneyManagerImportService>();
+                result = await importService.Preview(backup, cancellationToken);
+            }
             if (result.IsFailure)
             {
                 ClearPreview();
@@ -83,7 +89,12 @@ public sealed class SettingsViewModel(MoneyManagerImportService importService, S
         ClearMessage();
         try
         {
-            var result = await importService.Import(preview, cancellationToken);
+            Result<MoneyManagerImportReport> result;
+            using (var scope = scopeFactory.CreateScope())
+            {
+                var importService = scope.ServiceProvider.GetRequiredService<MoneyManagerImportService>();
+                result = await importService.Import(preview, cancellationToken);
+            }
             if (result.IsFailure)
             {
                 ShowError(result.Error.Message);

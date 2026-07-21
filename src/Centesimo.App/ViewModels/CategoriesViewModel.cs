@@ -2,10 +2,11 @@ using System.Collections.ObjectModel;
 using System.Windows.Input;
 using Centesimo.Application;
 using Centesimo.Domain;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Centesimo.App.ViewModels;
 
-public sealed class CategoriesViewModel(CategoryService categoryService) : ObservableObject
+public sealed class CategoriesViewModel(IServiceScopeFactory scopeFactory) : ObservableObject
 {
     private bool _isLoading;
     private bool _isArchivedView;
@@ -47,13 +48,13 @@ public sealed class CategoriesViewModel(CategoryService categoryService) : Obser
     public async Task Load()
     {
         IsArchivedView = false;
-        await LoadCategories(() => categoryService.GetActive(), Categories);
+        await LoadCategories(service => service.GetActive(), Categories);
     }
 
     public async Task LoadArchived()
     {
         IsArchivedView = true;
-        await LoadCategories(() => categoryService.GetArchived(), ArchivedCategories);
+        await LoadCategories(service => service.GetArchived(), ArchivedCategories);
     }
 
     public Task ShowActive() => Load();
@@ -61,12 +62,17 @@ public sealed class CategoriesViewModel(CategoryService categoryService) : Obser
     public Task ShowArchived() => LoadArchived();
 
     private async Task LoadCategories(
-        Func<Task<Result<IReadOnlyList<Category>>>> getCategories,
+        Func<CategoryService, Task<Result<IReadOnlyList<Category>>>> getCategories,
         ObservableCollection<CategoryItemViewModel> destination)
     {
         IsLoading = true;
         ErrorMessage = "";
-        var result = await getCategories();
+        Result<IReadOnlyList<Category>> result;
+        using (var scope = scopeFactory.CreateScope())
+        {
+            var categoryService = scope.ServiceProvider.GetRequiredService<CategoryService>();
+            result = await getCategories(categoryService);
+        }
         destination.Clear();
         if (result.IsFailure)
             ErrorMessage = result.Error.Message;
@@ -80,9 +86,14 @@ public sealed class CategoriesViewModel(CategoryService categoryService) : Obser
 
     public async Task<Result> Archive(Guid categoryId)
     {
-        var result = await categoryService.Archive(categoryId);
+        Result result;
+        using (var scope = scopeFactory.CreateScope())
+        {
+            var categoryService = scope.ServiceProvider.GetRequiredService<CategoryService>();
+            result = await categoryService.Archive(categoryId);
+        }
         if (result.IsSuccess)
-            await LoadCategories(() => categoryService.GetActive(), Categories);
+            await LoadCategories(service => service.GetActive(), Categories);
         else
             ErrorMessage = result.Error.Message;
 
@@ -91,9 +102,14 @@ public sealed class CategoriesViewModel(CategoryService categoryService) : Obser
 
     public async Task<Result> Restore(Guid categoryId)
     {
-        var result = await categoryService.Restore(categoryId);
+        Result result;
+        using (var scope = scopeFactory.CreateScope())
+        {
+            var categoryService = scope.ServiceProvider.GetRequiredService<CategoryService>();
+            result = await categoryService.Restore(categoryId);
+        }
         if (result.IsSuccess)
-            await LoadCategories(() => categoryService.GetArchived(), ArchivedCategories);
+            await LoadCategories(service => service.GetArchived(), ArchivedCategories);
         else
             ErrorMessage = result.Error.Message;
 
