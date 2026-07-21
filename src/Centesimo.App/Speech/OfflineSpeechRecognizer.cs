@@ -8,6 +8,7 @@ public interface IOfflineSpeechRecognizer
     bool IsListening { get; }
     Task<Result> Start(CancellationToken cancellationToken = default);
     Task<Result<string>> Stop(CancellationToken cancellationToken = default);
+    Task Cancel();
 }
 
 public sealed class UnavailableOfflineSpeechRecognizer : IOfflineSpeechRecognizer
@@ -24,4 +25,6 @@ public sealed class UnavailableOfflineSpeechRecognizer : IOfflineSpeechRecognize
 
     public Task<Result<string>> Stop(CancellationToken cancellationToken = default) =>
         Task.FromResult(Result<string>.Failure(new Error("Speech.NotListening", "La registrazione non è attiva.")));
+
+    public Task Cancel() => Task.CompletedTask;
 }

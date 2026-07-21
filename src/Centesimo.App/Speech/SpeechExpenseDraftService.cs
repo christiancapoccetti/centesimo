@@ -1,11 +1,11 @@
 using Centesimo.Application;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Centesimo.App;
 
 public sealed class SpeechExpenseDraftService(
     IOfflineSpeechRecognizer recognizer,
-    CategoryService categoryService,
-    TagService tagService,
+    IServiceScopeFactory scopeFactory,
     ExpenseSpeechCommandParser parser,
     ExpenseSpeechDraftResolver resolver,
     IPendingExpenseSpeechDraft pendingDraft)
@@ -19,6 +19,7 @@ public sealed class SpeechExpenseDraftService(
     public bool IsListening => recognizer.IsListening;
 
     public Task<Result> Start(CancellationToken cancellationToken = default) => recognizer.Start(cancellationToken);
+    public Task Cancel() => recognizer.Cancel();
 
     public async Task<Result> StopAndPrepare(CancellationToken cancellationToken = default)
     {
@@ -30,6 +31,9 @@ public sealed class SpeechExpenseDraftService(
         if (command.IsFailure)
             return Result.Failure(command.Error);
 
+        using var scope = scopeFactory.CreateScope();
+        var categoryService = scope.ServiceProvider.GetRequiredService<CategoryService>();
+        var tagService = scope.ServiceProvider.GetRequiredService<TagService>();
         var categories = await categoryService.GetActive(cancellationToken);
         if (categories.IsFailure)
             return Result.Failure(categories.Error);
@@ -41,7 +45,8 @@ public sealed class SpeechExpenseDraftService(
             if (tags.IsFailure)
                 return Result.Failure(tags.Error);
 
-            options.Add(new SpeechCategory(category.Name, tags.Value.Select(tag => new SpeechTag(tag.Name)).ToList()));
+            options.Add(new SpeechCategory(category.CategoryId, category.Name,
+                tags.Value.Select(tag => new SpeechTag(tag.TagId, tag.Name)).ToList()));
         }
 
         var draft = resolver.Resolve(command.Value, options);

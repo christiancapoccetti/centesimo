@@ -9,45 +9,51 @@ namespace Centesimo.App;
 public sealed class VoskOfflineSpeechRecognizer : IOfflineSpeechRecognizer, IDisposable
 {
     private const int SampleRate = 16_000;
-    private readonly object _sync = new();
-    private CancellationTokenSource? _recording;
-    private Task<string>? _recognition;
+    private readonly SemaphoreSlim _gate = new(1, 1);
+    private RecordingSession? _session;
     private AudioRecord? _audioRecord;
 
     public event EventHandler<string>? TranscriptionUpdated;
-    public bool IsListening { get; private set; }
+    public bool IsListening => Volatile.Read(ref _session) is not null;
 
-    public Task<Result> Start(CancellationToken cancellationToken = default)
+    public async Task<Result> Start(CancellationToken cancellationToken = default)
     {
         var modelPath = Path.Combine(FileSystem.AppDataDirectory, "vosk-model-small-it-0.22");
         if (!Directory.Exists(modelPath))
-            return Task.FromResult(Result.Failure(new Error("Speech.ModelMissing", "Il modello italiano offline non è installato sul dispositivo.")));
+            return Result.Failure(new Error("Speech.ModelMissing", "Il modello italiano offline non è installato sul dispositivo."));
 
-        if (IsListening)
-            return Task.FromResult(Result.Failure(new Error("Speech.AlreadyListening", "La registrazione è già attiva.")));
+        if (await Permissions.CheckStatusAsync<Permissions.Microphone>() != PermissionStatus.Granted)
+            return Result.Failure(new Error("Speech.MicrophoneDenied", "Consenti l'accesso al microfono per usare i comandi vocali."));
 
-        var permission = Permissions.CheckStatusAsync<Permissions.Microphone>().GetAwaiter().GetResult();
-        if (permission != PermissionStatus.Granted)
-            return Task.FromResult(Result.Failure(new Error("Speech.MicrophoneDenied", "Consenti l'accesso al microfono per usare i comandi vocali.")));
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            if (_session is not null)
+                return Result.Failure(new Error("Speech.AlreadyListening", "La registrazione è già attiva."));
 
-        _recording = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        IsListening = true;
-        _recognition = Task.Run(() => Recognize(modelPath, _recording.Token), CancellationToken.None);
-        return Task.FromResult(Result.Success());
+            var recording = new CancellationTokenSource();
+            var recognition = Task.Run(() => Recognize(modelPath, recording.Token), CancellationToken.None);
+            _session = new RecordingSession(recording, recognition);
+            return Result.Success();
+        }
+        finally
+        {
+            _gate.Release();
+        }
     }
 
     public async Task<Result<string>> Stop(CancellationToken cancellationToken = default)
     {
-        if (!IsListening || _recording is null || _recognition is null)
+        var session = await TakeSession(cancellationToken);
+        if (session is null)
             return Result<string>.Failure(new Error("Speech.NotListening", "La registrazione non è attiva."));
 
-        _recording.Cancel();
         try
         {
-            var transcription = await _recognition.WaitAsync(cancellationToken);
-            return !string.IsNullOrWhiteSpace(transcription)
-                ? Result<string>.Success(transcription)
-                : Result<string>.Failure(new Error("Speech.Empty", "Non ho capito il comando. Riprova."));
+            var transcription = await session.Recognition;
+            return string.IsNullOrWhiteSpace(transcription)
+                ? Result<string>.Failure(new Error("Speech.Empty", "Non ho capito il comando. Riprova."))
+                : Result<string>.Success(transcription);
         }
         catch (Exception)
         {
@@ -55,10 +61,47 @@ public sealed class VoskOfflineSpeechRecognizer : IOfflineSpeechRecognizer, IDis
         }
         finally
         {
-            IsListening = false;
-            _recording.Dispose();
-            _recording = null;
-            _recognition = null;
+            session.Dispose();
+        }
+    }
+
+    public async Task Cancel()
+    {
+        var session = await TakeSession(CancellationToken.None);
+        if (session is null)
+            return;
+
+        try
+        {
+            await session.Recognition;
+        }
+        catch (Exception)
+        {
+        }
+        finally
+        {
+            session.Dispose();
+        }
+    }
+
+    private async Task<RecordingSession?> TakeSession(CancellationToken cancellationToken)
+    {
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            var session = _session;
+            _session = null;
+            if (session is not null)
+            {
+                session.Cancel();
+                _audioRecord?.Stop();
+            }
+
+            return session;
+        }
+        finally
+        {
+            _gate.Release();
         }
     }
 
@@ -67,15 +110,16 @@ public sealed class VoskOfflineSpeechRecognizer : IOfflineSpeechRecognizer, IDis
         Vosk.Vosk.SetLogLevel(-1);
         using var model = new Model(modelPath);
         using var recognizer = new VoskRecognizer(model, SampleRate);
-        var minimumBuffer = AudioRecord.GetMinBufferSize(SampleRate, ChannelIn.Mono, Encoding.Pcm16bit);
-        _audioRecord = new AudioRecord(AudioSource.Mic, SampleRate, ChannelIn.Mono, Encoding.Pcm16bit, minimumBuffer * 2);
-        var buffer = new short[minimumBuffer];
-        _audioRecord.StartRecording();
+        var bufferSize = AudioRecord.GetMinBufferSize(SampleRate, ChannelIn.Mono, Encoding.Pcm16bit);
+        var audioRecord = new AudioRecord(AudioSource.Mic, SampleRate, ChannelIn.Mono, Encoding.Pcm16bit, bufferSize * 2);
+        var buffer = new short[bufferSize];
+        _audioRecord = audioRecord;
+        audioRecord.StartRecording();
         try
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var read = _audioRecord.Read(buffer, 0, buffer.Length);
+                var read = audioRecord.Read(buffer, 0, buffer.Length);
                 if (read <= 0)
                     continue;
 
@@ -89,10 +133,12 @@ public sealed class VoskOfflineSpeechRecognizer : IOfflineSpeechRecognizer, IDis
         }
         finally
         {
-            _audioRecord.Stop();
-            _audioRecord.Release();
-            _audioRecord.Dispose();
-            _audioRecord = null;
+            if (audioRecord.RecordingState == RecordState.Recording)
+                audioRecord.Stop();
+            audioRecord.Release();
+            audioRecord.Dispose();
+            if (ReferenceEquals(_audioRecord, audioRecord))
+                _audioRecord = null;
             Array.Clear(buffer);
         }
     }
@@ -105,6 +151,17 @@ public sealed class VoskOfflineSpeechRecognizer : IOfflineSpeechRecognizer, IDis
             : document.RootElement.TryGetProperty("partial", out var partial) ? partial.GetString() ?? "" : "";
     }
 
-    public void Dispose() => _recording?.Cancel();
+    public void Dispose()
+    {
+        _ = Cancel();
+        _gate.Dispose();
+    }
+
+    private sealed class RecordingSession(CancellationTokenSource cancellation, Task<string> recognition) : IDisposable
+    {
+        public Task<string> Recognition { get; } = recognition;
+        public void Cancel() => cancellation.Cancel();
+        public void Dispose() => cancellation.Dispose();
+    }
 }
 #endif

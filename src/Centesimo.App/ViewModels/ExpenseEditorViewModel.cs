@@ -154,7 +154,7 @@ public sealed class ExpenseEditorViewModel : ObservableObject
         Amount = (draft.AmountCents / 100m).ToString("0.00", ItalianCulture);
         OccurredOn = draft.OccurredOn?.ToDateTime(TimeOnly.MinValue) ?? DateTime.Today;
         Note = draft.Note;
-        SelectedCategory = Categories.SingleOrDefault(category => category.Name.Equals(draft.CategoryName, StringComparison.OrdinalIgnoreCase));
+        SelectedCategory = Categories.SingleOrDefault(category => category.CategoryId == draft.CategoryId);
         if (SelectedCategory is null)
         {
             ErrorMessage = "La categoria riconosciuta non è più disponibile. Selezionala manualmente.";
@@ -165,7 +165,7 @@ public sealed class ExpenseEditorViewModel : ObservableObject
         if (!draft.TagName.HasValue())
             return;
 
-        SelectedTag = Tags.SingleOrDefault(tag => tag.Name.Equals(draft.TagName, StringComparison.OrdinalIgnoreCase));
+        SelectedTag = Tags.SingleOrDefault(tag => tag.TagId == draft.TagId);
         if (SelectedTag is null)
             ErrorMessage = "Il tag riconosciuto non è più disponibile. Selezionalo manualmente.";
     }

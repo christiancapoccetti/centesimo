@@ -22,6 +22,18 @@ public partial class TodayPage : ContentPage
         await _viewModel.Load();
     }
 
+    protected override async void OnDisappearing()
+    {
+        base.OnDisappearing();
+        if (!_speechDraftService.IsListening)
+            return;
+
+        await _speechDraftService.Cancel();
+        _viewModel.IsSpeechListening = false;
+        _viewModel.IsSpeechProcessing = false;
+        _viewModel.IsSpeechSheetVisible = false;
+    }
+
     private async void OnPreviousMonthClicked(object? sender, EventArgs e) =>
         await _viewModel.PreviousMonth();
 
@@ -54,36 +66,52 @@ public partial class TodayPage : ContentPage
 
     private async void OnSpeechClicked(object? sender, EventArgs e)
     {
-        var permission = await Permissions.RequestAsync<Permissions.Microphone>();
-        if (permission != PermissionStatus.Granted)
+        try
         {
-            _viewModel.SpeechErrorMessage = "Consenti l'accesso al microfono per usare i comandi vocali.";
-            _viewModel.IsSpeechSheetVisible = true;
-            return;
-        }
+            var permission = await Permissions.RequestAsync<Permissions.Microphone>();
+            if (permission != PermissionStatus.Granted)
+            {
+                _viewModel.SpeechErrorMessage = "Consenti l'accesso al microfono per usare i comandi vocali.";
+                _viewModel.IsSpeechSheetVisible = true;
+                return;
+            }
 
-        var result = await _speechDraftService.Start();
-        _viewModel.SpeechErrorMessage = result.IsFailure ? result.Error.Message : "";
-        _viewModel.IsSpeechSheetVisible = true;
-        _viewModel.IsSpeechListening = result.IsSuccess;
-        _viewModel.IsSpeechProcessing = false;
-        _viewModel.SpeechTranscription = "Parla ora, poi premi Ferma registrazione.";
+            var result = await _speechDraftService.Start();
+            _viewModel.SpeechErrorMessage = result.IsFailure ? result.Error.Message : "";
+            _viewModel.IsSpeechSheetVisible = true;
+            _viewModel.IsSpeechListening = result.IsSuccess;
+            _viewModel.IsSpeechProcessing = false;
+            _viewModel.SpeechTranscription = "Parla ora, poi premi Ferma registrazione.";
+        }
+        catch
+        {
+            _viewModel.SpeechErrorMessage = "Non riesco ad avviare il riconoscimento vocale.";
+            _viewModel.IsSpeechSheetVisible = true;
+        }
     }
 
     private async void OnStopSpeechClicked(object? sender, EventArgs e)
     {
-        _viewModel.IsSpeechListening = false;
-        _viewModel.IsSpeechProcessing = true;
-        var result = await _speechDraftService.StopAndPrepare();
-        _viewModel.IsSpeechProcessing = false;
-        if (result.IsFailure)
+        try
         {
-            _viewModel.SpeechErrorMessage = result.Error.Message;
-            return;
-        }
+            _viewModel.IsSpeechListening = false;
+            _viewModel.IsSpeechProcessing = true;
+            var result = await _speechDraftService.StopAndPrepare();
+            _viewModel.IsSpeechProcessing = false;
+            if (result.IsFailure)
+            {
+                _viewModel.SpeechErrorMessage = result.Error.Message;
+                return;
+            }
 
-        _viewModel.IsSpeechSheetVisible = false;
-        await Shell.Current.GoToAsync(nameof(ExpenseEditorPage));
+            _viewModel.IsSpeechSheetVisible = false;
+            await Shell.Current.GoToAsync(nameof(ExpenseEditorPage));
+        }
+        catch
+        {
+            _viewModel.IsSpeechProcessing = false;
+            _viewModel.SpeechErrorMessage = "Non riesco a elaborare il comando vocale.";
+        }
     }
 
     private void OnTranscriptionUpdated(object? sender, string transcription) =>

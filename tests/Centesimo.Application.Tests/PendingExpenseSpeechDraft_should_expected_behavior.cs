@@ -3,10 +3,10 @@ namespace Centesimo.Application.Tests;
 public sealed class PendingExpenseSpeechDraft_should_expected_behavior
 {
     [Fact]
-    public void Take_returns_draft_only_once()
+    public void Take_returns_resolved_draft_only_once()
     {
         var pending = new PendingExpenseSpeechDraft();
-        var draft = new ExpenseSpeechDraft(5_000, "Auto", "", null, "", "testo");
+        var draft = new ExpenseSpeechDraft(5_000, Guid.NewGuid(), "Auto", Guid.NewGuid(), "Tagliando", null, "", "testo");
 
         pending.Set(draft);
 
