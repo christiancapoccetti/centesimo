@@ -72,6 +72,7 @@ public sealed class SettingsViewModel(MoneyManagerImportService importService) :
             }
 
             ShowMessage($"Importazione completata: {result.Value.ExpensesAdded} spese, " +
+                $"{result.Value.RecurringPaymentsAdded} pagamenti regolari, " +
                 $"{result.Value.CategoriesAdded} categorie e {result.Value.TagsAdded} tag aggiunti. " +
                 $"Ignorati: {result.Value.IgnoredCount}; senza categoria: {result.Value.UncategorizedCount}.");
         }

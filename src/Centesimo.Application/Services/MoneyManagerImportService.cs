@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Centesimo.Domain;
 
 namespace Centesimo.Application;
 
@@ -8,11 +9,15 @@ public sealed record MoneyManagerCategory(string SourceUid, string Name, string 
 public sealed record MoneyManagerTag(string SourceUid, string CategorySourceUid, string Name);
 public sealed record MoneyManagerExpense(string SourceUid, string CategorySourceUid, string? TagSourceUid,
     long AmountCents, DateOnly OccurredOn, string Note);
+public sealed record MoneyManagerRecurringPayment(string SourceUid, string CategorySourceUid,
+    string? TagSourceUid, long AmountCents, RecurrenceFrequency Frequency, DateOnly NextDueOn,
+    string Note, DateOnly? EndsOn);
 public sealed record MoneyManagerImportData(IReadOnlyList<MoneyManagerCategory> Categories,
     IReadOnlyList<MoneyManagerTag> Tags, IReadOnlyList<MoneyManagerExpense> Expenses,
-    int IgnoredCount, int UncategorizedCount);
-public sealed record MoneyManagerPersisted(int CategoriesAdded, int TagsAdded, int ExpensesAdded);
-public sealed record MoneyManagerImportReport(int CategoriesAdded, int TagsAdded, int ExpensesAdded,
+    int IgnoredCount, int UncategorizedCount, IReadOnlyList<MoneyManagerRecurringPayment>? RecurringPayments = null)
+{ public IReadOnlyList<MoneyManagerRecurringPayment> RecurringPaymentsOrEmpty => RecurringPayments ?? []; }
+public sealed record MoneyManagerPersisted(int CategoriesAdded, int TagsAdded, int ExpensesAdded, int RecurringPaymentsAdded = 0);
+public sealed record MoneyManagerImportReport(int CategoriesAdded, int TagsAdded, int ExpensesAdded, int RecurringPaymentsAdded,
     int IgnoredCount, int UncategorizedCount);
 
 public sealed record MoneyManagerImportPreview(MoneyManagerImportData Data, MoneyManagerPersisted Planned)
@@ -20,6 +25,7 @@ public sealed record MoneyManagerImportPreview(MoneyManagerImportData Data, Mone
     public int CategoriesCount => Planned.CategoriesAdded;
     public int TagsCount => Planned.TagsAdded;
     public int ExpensesCount => Planned.ExpensesAdded;
+    public int RecurringPaymentsCount => Planned.RecurringPaymentsAdded;
 }
 public interface IMoneyManagerBackupReader
 {
@@ -65,7 +71,7 @@ public sealed class MoneyManagerImportService(IMoneyManagerBackupReader reader, 
             return Result<MoneyManagerImportReport>.Failure(persisted.Error);
 
         return Result<MoneyManagerImportReport>.Success(new MoneyManagerImportReport(
-            persisted.Value.CategoriesAdded, persisted.Value.TagsAdded, persisted.Value.ExpensesAdded,
+            persisted.Value.CategoriesAdded, persisted.Value.TagsAdded, persisted.Value.ExpensesAdded, persisted.Value.RecurringPaymentsAdded,
             preview.Data.IgnoredCount, preview.Data.UncategorizedCount));
     }
 }

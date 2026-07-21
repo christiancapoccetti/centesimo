@@ -35,7 +35,8 @@ public partial class SettingsPage : ContentPage
             var confirmed = await DisplayAlertAsync(
                 "Importa backup",
                 $"Verranno importate {preview.Value.CategoriesCount} categorie, " +
-                $"{preview.Value.TagsCount} tag e {preview.Value.ExpensesCount} spese. Vuoi continuare?",
+                $"{preview.Value.TagsCount} tag, {preview.Value.ExpensesCount} spese e " +
+                $"{preview.Value.RecurringPaymentsCount} pagamenti regolari. Vuoi continuare?",
                 "Importa",
                 "Annulla");
             if (!confirmed)

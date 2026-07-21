@@ -85,7 +85,16 @@ public sealed class MoneyManagerImportRepository(CentesimoDbContext context)
                 expensesAdded++;
             }
 
-            return new MoneyManagerPersisted(categoriesAdded, tagsAdded, expensesAdded);
+            var recurringIds = data.RecurringPaymentsOrEmpty
+                .Select(value => MoneyManagerImportIds.Create("recurring-payment", value.SourceUid))
+                .ToList();
+            var existingRecurringIds = await db.RecurringPayments.AsNoTracking()
+                .Where(value => recurringIds.Contains(value.RecurringPaymentId))
+                .Select(value => value.RecurringPaymentId).ToHashSetAsync(token);
+            var recurringAdded = data.RecurringPaymentsOrEmpty.Count(source =>
+                categoryMap.ContainsKey(source.CategorySourceUid) &&
+                !existingRecurringIds.Contains(MoneyManagerImportIds.Create("recurring-payment", source.SourceUid)));
+            return new MoneyManagerPersisted(categoriesAdded, tagsAdded, expensesAdded, recurringAdded);
         }, cancellationToken);
 
     public Task<Result<MoneyManagerPersisted>> Import(MoneyManagerImportData data,
@@ -166,6 +175,29 @@ public sealed class MoneyManagerImportRepository(CentesimoDbContext context)
                 expensesAdded++;
             }
 
-            return new MoneyManagerPersisted(categoriesAdded, tagsAdded, expensesAdded);
+            var recurringIds = data.RecurringPaymentsOrEmpty
+                .Select(value => MoneyManagerImportIds.Create("recurring-payment", value.SourceUid))
+                .ToList();
+            var existingRecurringIds = await db.RecurringPayments
+                .Where(value => recurringIds.Contains(value.RecurringPaymentId))
+                .Select(value => value.RecurringPaymentId).ToHashSetAsync(token);
+            var recurringAdded = 0;
+            foreach (var source in data.RecurringPaymentsOrEmpty.OrderBy(value => value.SourceUid, StringComparer.Ordinal))
+            {
+                var recurringPaymentId = MoneyManagerImportIds.Create("recurring-payment", source.SourceUid);
+                if (existingRecurringIds.Contains(recurringPaymentId) ||
+                    !categoryMap.TryGetValue(source.CategorySourceUid, out var categoryId))
+                    continue;
+
+                Guid? tagId = null;
+                if (source.TagSourceUid is not null && tagMap.TryGetValue(source.TagSourceUid, out var mappedTagId))
+                    tagId = mappedTagId;
+                db.RecurringPayments.Add(new RecurringPayment(recurringPaymentId, categoryId,
+                    new Money(source.AmountCents), source.Frequency, source.NextDueOn, tagId,
+                    source.Note, source.EndsOn));
+                existingRecurringIds.Add(recurringPaymentId);
+                recurringAdded++;
+            }
+            return new MoneyManagerPersisted(categoriesAdded, tagsAdded, expensesAdded, recurringAdded);
         }, cancellationToken, true);
 }
