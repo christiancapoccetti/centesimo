@@ -146,6 +146,12 @@ public partial class TodayPage : ContentPage
         _viewModel.SpeechErrorMessage = "";
     }
 
+    private void OnRetrySpeechClicked(object? sender, EventArgs e)
+    {
+        OnCloseSpeechClicked(sender, e);
+        _viewModel.SpeechTranscription = "Tieni premuto il microfono per riprovare.";
+    }
+
     private void OnTranscriptionUpdated(object? sender, string transcription) =>
         MainThread.BeginInvokeOnMainThread(() => _viewModel.SpeechTranscription = transcription);
 }
