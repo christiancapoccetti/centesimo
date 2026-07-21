@@ -17,7 +17,7 @@ public partial class AppShell : Shell
             Items =
             {
                 CreateTab("Oggi", "TodayPage", "⌂", todayPage),
-                CreateTab("Insight", "InsightsPage", "▥", insightsPage),
+                CreateTab("Insight", "InsightsPage", "〽", insightsPage),
                 CreateTab("Categorie", "CategoriesPage", "▦", categoriesPage),
                 CreateTab("Impostazioni", "SettingsPage", "⚙", settingsPage)
             }

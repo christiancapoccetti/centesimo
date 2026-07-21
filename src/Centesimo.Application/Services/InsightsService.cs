@@ -1,5 +1,4 @@
 using Centesimo.Domain;
-using System.Globalization;
 
 namespace Centesimo.Application;
 
@@ -14,8 +13,6 @@ public interface IInsightsService
     Task<Result<InsightsOverview>> Get(InsightPeriod period, CancellationToken cancellationToken = default);
 }
 
-public sealed record InsightTrendPoint(string Label, long SpentCents);
-
 public sealed record InsightCategory(Guid CategoryId, string Name, string Icon, string Color,
     long SpentCents, double Percentage, long? ComparedSpentCents, double? ChangePercentage);
 
@@ -25,8 +22,8 @@ public sealed record LocalInsight(InsightKind Kind, string Title, string Descrip
     Guid? ExpenseId = null);
 
 public sealed record InsightsOverview(InsightPeriod Period, DateOnly From, DateOnly To, long SpentCents,
-    long? ComparedSpentCents, double? ChangePercentage, IReadOnlyList<InsightTrendPoint> Trend,
-    IReadOnlyList<InsightCategory> Categories, IReadOnlyList<LocalInsight> Insights);
+    long? ComparedSpentCents, double? ChangePercentage, IReadOnlyList<InsightCategory> Categories,
+    IReadOnlyList<LocalInsight> Insights);
 
 public sealed class InsightsService(ICategoryRepository categories, IExpenseRepository expenses,
     Func<DateOnly>? today = null) : IInsightsService
@@ -71,11 +68,10 @@ public sealed class InsightsService(ICategoryRepository categories, IExpenseRepo
             })
             .OrderByDescending(x => x.SpentCents).ThenBy(x => x.Name).ToList();
         var categoryItems = comparisonCategories.Where(x => x.SpentCents > 0).ToList();
-        var trend = BuildTrend(period, from, to, currentExpenses);
         var localInsights = BuildInsights(comparisonCategories, currentExpenses, previousExpenses, total, comparable);
         return Result<InsightsOverview>.Success(new InsightsOverview(period, from, to, total, comparable,
             comparable is null ? null : (double)(total - comparable.Value) / comparable.Value,
-            trend, categoryItems, localInsights));
+            categoryItems, localInsights));
     }
 
     private static (DateOnly From, DateOnly To, DateOnly? PreviousFrom, DateOnly? PreviousTo) GetRanges(InsightPeriod period, DateOnly today)
@@ -96,20 +92,6 @@ public sealed class InsightsService(ICategoryRepository categories, IExpenseRepo
             return (yearStart, today, null, null);
         var previousYearTo = new DateOnly(today.Year - 1, today.Month, today.Day);
         return (yearStart, today, previousYearStart, previousYearTo);
-    }
-
-    private static IReadOnlyList<InsightTrendPoint> BuildTrend(InsightPeriod period, DateOnly from, DateOnly to, IReadOnlyList<Expense> expenses)
-    {
-        var culture = CultureInfo.GetCultureInfo("it-IT");
-        if (period == InsightPeriod.Month)
-            return Enumerable.Range(0, to.DayNumber - from.DayNumber + 1)
-                .Select(offset => from.AddDays(offset))
-                .Select(day => new InsightTrendPoint(day.ToDateTime(TimeOnly.MinValue).ToString("d MMM", culture), expenses.Where(x => x.OccurredOn == day).Sum(x => x.Amount.Cents)))
-                .ToList();
-
-        return Enumerable.Range(1, to.Month)
-            .Select(month => new InsightTrendPoint(new DateTime(from.Year, month, 1).ToString("MMMM", culture), expenses.Where(x => x.OccurredOn.Month == month).Sum(x => x.Amount.Cents)))
-            .ToList();
     }
 
     private static IReadOnlyList<LocalInsight> BuildInsights(IReadOnlyList<InsightCategory> categories,

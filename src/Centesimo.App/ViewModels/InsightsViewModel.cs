@@ -18,7 +18,6 @@ public sealed class InsightsViewModel(IServiceScopeFactory scopeFactory) : Obser
     public ObservableCollection<InsightCardViewModel> Insights { get; } = [];
     public ObservableCollection<InsightCardViewModel> AllInsights { get; } = [];
     public ObservableCollection<InsightCategoryViewModel> Categories { get; } = [];
-    public ObservableCollection<InsightTrendItemViewModel> Trend { get; } = [];
     public string SummaryLabel => _period == InsightPeriod.Month ? "QUESTO MESE" : "QUESTO ANNO";
     public string Total { get => _total; private set => SetProperty(ref _total, value); }
     public string Comparison { get => _comparison; private set => SetProperty(ref _comparison, value); }
@@ -35,9 +34,11 @@ public sealed class InsightsViewModel(IServiceScopeFactory scopeFactory) : Obser
     public string YearSelectorDescription => IsMonthly ? "Questo anno, non selezionato" : "Questo anno, selezionato";
     public bool HasMoreInsights => AllInsights.Count > 3 && !_showAllInsights;
     public string MoreInsightsText => "Mostra tutti gli insight";
-    public string TrendDescription => Trend.Count == 0
-        ? "Nessun andamento disponibile."
-        : $"Andamento delle spese. Picco di {Trend.MaxBy(x => x.AmountCents)!.Amount} il {Trend.MaxBy(x => x.AmountCents)!.Label}.";
+    public double ComparisonProgress { get; private set; }
+    public bool HasComparison => ComparisonProgress > 0;
+    public string ComparisonDescription => Comparison.HasValue()
+        ? $"Confronto: {Comparison}"
+        : "Nessun confronto disponibile.";
     public Task Load() => Load(_period); public Task ShowMonth() => Load(InsightPeriod.Month); public Task ShowYear() => Load(InsightPeriod.Year);
     public void ShowAllInsights()
     {
@@ -54,8 +55,15 @@ public sealed class InsightsViewModel(IServiceScopeFactory scopeFactory) : Obser
         Insights.Clear();
         AllInsights.Clear();
         Categories.Clear();
-        Trend.Clear();
-        if (result.IsFailure) { Total = FormatMoney(0); Comparison = ""; ErrorMessage = result.Error.Message; } else Apply(result.Value);
+        if (result.IsFailure)
+        {
+            Total = FormatMoney(0);
+            Comparison = "";
+            ComparisonProgress = 0;
+            ErrorMessage = result.Error.Message;
+        }
+        else
+            Apply(result.Value);
         IsLoading = false;
         OnPropertyChanged(nameof(SummaryLabel));
         OnPropertyChanged(nameof(IsMonthly));
@@ -66,22 +74,23 @@ public sealed class InsightsViewModel(IServiceScopeFactory scopeFactory) : Obser
         OnPropertyChanged(nameof(HasInsights));
         OnPropertyChanged(nameof(HasCategories));
         OnPropertyChanged(nameof(IsEmpty));
-        OnPropertyChanged(nameof(TrendDescription));
+        OnPropertyChanged(nameof(ComparisonProgress));
+        OnPropertyChanged(nameof(HasComparison));
+        OnPropertyChanged(nameof(ComparisonDescription));
         OnPropertyChanged(nameof(HasMoreInsights));
     }
     private void Apply(InsightsOverview overview)
     {
         Total = FormatMoney(overview.SpentCents);
-        Comparison = overview.ChangePercentage.HasValue ? $"{(overview.ChangePercentage >= 0 ? "+" : "")}{overview.ChangePercentage:P0} rispetto al periodo precedente" : "Continua a registrare le spese per confrontare questo periodo.";
+        Comparison = FormatComparison(overview);
+        ComparisonProgress = overview.ComparedSpentCents.HasValue
+            ? (double)overview.SpentCents / Math.Max(overview.SpentCents, overview.ComparedSpentCents.Value)
+            : 0;
         _showAllInsights = false;
         foreach (var item in overview.Insights)
             AllInsights.Add(new(item.Title, item.Description, item.CategoryId, item.ExpenseId,
                 item.ExpenseId.HasValue || (_period == InsightPeriod.Month && item.CategoryId.HasValue)));
         RefreshInsights();
-        var maximum = overview.Trend.Max(x => x.SpentCents);
-        foreach (var point in overview.Trend)
-            Trend.Add(new InsightTrendItemViewModel(point.Label, FormatMoney(point.SpentCents), point.SpentCents,
-                maximum == 0 ? 0 : (double)point.SpentCents / maximum));
         foreach (var category in overview.Categories)
             Categories.Add(new(category.CategoryId, category.Name, category.Icon, category.Color,
                 FormatMoney(category.SpentCents), $"{category.Percentage:P0} del totale",
@@ -89,6 +98,18 @@ public sealed class InsightsViewModel(IServiceScopeFactory scopeFactory) : Obser
                 category.Percentage, _period == InsightPeriod.Month));
     }
     private static string FormatMoney(long cents) => (cents / 100m).ToString("C", ItalianCulture);
+    private static string FormatComparison(InsightsOverview overview)
+    {
+        if (!overview.ChangePercentage.HasValue)
+            return "Nessun periodo equivalente da confrontare.";
+
+        var current = overview.To.ToDateTime(TimeOnly.MinValue);
+        var change = $"{(overview.ChangePercentage >= 0 ? "+" : "")}{overview.ChangePercentage:P0}";
+        if (overview.Period == InsightPeriod.Month)
+            return $"{current.ToString("MMMM", ItalianCulture)} rispetto a {current.AddMonths(-1).ToString("MMMM", ItalianCulture)}: {change}";
+
+        return $"gennaio–{current.ToString("MMMM", ItalianCulture)} {current.Year} rispetto allo stesso periodo del {current.Year - 1}: {change}";
+    }
     private void RefreshInsights()
     {
         Insights.Clear();
@@ -100,7 +121,6 @@ public sealed class InsightsViewModel(IServiceScopeFactory scopeFactory) : Obser
 
     public sealed record InsightCardViewModel(string Title, string Description, Guid? CategoryId, Guid? ExpenseId,
         bool IsActionable);
-    public sealed record InsightTrendItemViewModel(string Label, string Amount, long AmountCents, double Progress);
     public sealed record InsightCategoryViewModel(Guid CategoryId, string Name, string Icon, string Color,
         string Amount, string Percentage, string Change, double Progress, bool IsActionable)
     {
