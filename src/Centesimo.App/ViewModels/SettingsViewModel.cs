@@ -1,9 +1,10 @@
 using Centesimo.Application;
+using Centesimo.App;
 using Centesimo.Domain;
 
 namespace Centesimo.App.ViewModels;
 
-public sealed class SettingsViewModel(MoneyManagerImportService importService) : ObservableObject
+public sealed class SettingsViewModel(MoneyManagerImportService importService, SpeechPreparationStatus speechPreparation) : ObservableObject
 {
     private bool _isBusy;
     private string _message = "";
@@ -33,6 +34,7 @@ public sealed class SettingsViewModel(MoneyManagerImportService importService) :
         }
     }
     public bool HasPreview => PreviewResult is not null;
+    public SpeechPreparationStatus SpeechPreparation => speechPreparation;
 
     public async Task<Result<MoneyManagerImportPreview>> Preview(Stream backup,
         CancellationToken cancellationToken = default)

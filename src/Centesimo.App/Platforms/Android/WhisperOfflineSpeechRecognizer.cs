@@ -24,6 +24,29 @@ public sealed class WhisperOfflineSpeechRecognizer : IOfflineSpeechRecognizer, I
     }
     public bool IsListening => Volatile.Read(ref _session) is not null;
 
+    public async Task<Result> WarmUp(CancellationToken cancellationToken = default)
+    {
+        var modelPath = Path.Combine(FileSystem.AppDataDirectory, ItalianSpeechModelProvisioner.ModelName);
+        if (!File.Exists(modelPath))
+            return Result.Failure(new Error("Speech.ModelMissing", "Il modello italiano non è disponibile."));
+
+        await _factoryGate.WaitAsync(cancellationToken);
+        try
+        {
+            ThrowIfDisposed();
+            _factory ??= await Task.Run(() => WhisperFactory.FromPath(modelPath), cancellationToken);
+            return Result.Success();
+        }
+        catch (Exception)
+        {
+            return Result.Failure(new Error("Speech.WarmUpFailed", "Non riesco a preparare il riconoscimento vocale."));
+        }
+        finally
+        {
+            _factoryGate.Release();
+        }
+    }
+
     public async Task<Result> Start(CancellationToken cancellationToken = default)
     {
         if (Volatile.Read(ref _disposeStarted) != 0)
