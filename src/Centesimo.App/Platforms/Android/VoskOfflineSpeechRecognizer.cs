@@ -43,12 +43,14 @@ public sealed class VoskOfflineSpeechRecognizer : IOfflineSpeechRecognizer, IDis
 
     public async Task<Result<string>> Stop(CancellationToken cancellationToken = default)
     {
-        var session = await TakeSession(cancellationToken);
+        var session = await TakeSession(cancellationToken, false);
         if (session is null)
             return Result<string>.Failure(new Error("Speech.NotListening", "La registrazione non è attiva."));
 
         try
         {
+            await Task.Delay(400, cancellationToken);
+            session.Cancel();
             var transcription = await session.Recognition;
             return string.IsNullOrWhiteSpace(transcription)
                 ? Result<string>.Failure(new Error("Speech.Empty", "Non ho capito il comando. Riprova."))
@@ -66,7 +68,7 @@ public sealed class VoskOfflineSpeechRecognizer : IOfflineSpeechRecognizer, IDis
 
     public async Task Cancel()
     {
-        var session = await TakeSession(CancellationToken.None);
+        var session = await TakeSession(CancellationToken.None, true);
         if (session is null)
             return;
 
@@ -83,7 +85,7 @@ public sealed class VoskOfflineSpeechRecognizer : IOfflineSpeechRecognizer, IDis
         }
     }
 
-    private async Task<RecordingSession?> TakeSession(CancellationToken cancellationToken)
+    private async Task<RecordingSession?> TakeSession(CancellationToken cancellationToken, bool cancelImmediately)
     {
         await _gate.WaitAsync(cancellationToken);
         try
@@ -92,7 +94,8 @@ public sealed class VoskOfflineSpeechRecognizer : IOfflineSpeechRecognizer, IDis
             _session = null;
             if (session is not null)
             {
-                session.Cancel();
+                if (cancelImmediately)
+                    session.Cancel();
             }
 
             return session;
