@@ -66,7 +66,7 @@ public partial class TodayPage : ContentPage
     private async void OnAddExpenseClicked(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync(nameof(ExpenseEditorPage));
 
-    private async void OnSpeechClicked(object? sender, EventArgs e)
+    private async void OnSpeechPressed(object? sender, EventArgs e)
     {
         try
         {
@@ -107,7 +107,7 @@ public partial class TodayPage : ContentPage
         }
     }
 
-    private async void OnStopSpeechClicked(object? sender, EventArgs e)
+    private async void OnSpeechReleased(object? sender, EventArgs e)
     {
         try
         {
@@ -129,6 +129,20 @@ public partial class TodayPage : ContentPage
             _viewModel.IsSpeechProcessing = false;
             _viewModel.SpeechErrorMessage = "Non riesco a elaborare il comando vocale.";
         }
+        finally
+        {
+            _viewModel.IsSpeechListening = false;
+            if (_viewModel.HasSpeechError)
+                _viewModel.IsSpeechSheetVisible = true;
+        }
+    }
+
+    private void OnCloseSpeechClicked(object? sender, EventArgs e)
+    {
+        _viewModel.IsSpeechListening = false;
+        _viewModel.IsSpeechProcessing = false;
+        _viewModel.IsSpeechSheetVisible = false;
+        _viewModel.SpeechErrorMessage = "";
     }
 
     private void OnTranscriptionUpdated(object? sender, string transcription) =>

@@ -22,4 +22,17 @@ public sealed class ExpenseSpeechCommandParser_should_expected_behavior
 
         Assert.True(result.IsFailure);
     }
+
+    [Theory]
+    [InlineData("Inserisci 50 euro di spesa su lavoro", "lavoro")]
+    [InlineData("Registra 50 euro di spesa in Lavoro", "Lavoro")]
+    [InlineData("Aggiungi spesa di 50 euro categoria lavoro", "lavoro")]
+    public void Parse_flexible_italian_category_connectors(string transcription, string category)
+    {
+        var result = _parser.Parse(transcription);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(50m, result.Value.Amount);
+        Assert.Equal(category, result.Value.CategoryName);
+    }
 }
