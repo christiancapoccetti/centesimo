@@ -12,6 +12,7 @@
             </VerticalStackLayout>
             <Label Text="AUTOMAZIONI" Style="{StaticResource LabelLarge}" TextColor="{StaticResource PrimaryLight}" />
             <Border Style="{StaticResource SurfaceCard}" Padding="16">
+                <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnRecurringPaymentsTapped" /></Border.GestureRecognizers>
                 <Grid ColumnDefinitions="52,*,Auto" ColumnSpacing="12">
                     <Border Style="{StaticResource CategoryIconContainer}" BackgroundColor="{StaticResource PrimaryContainerLight}"><Label Text="↻" FontSize="26" TextColor="{StaticResource PrimaryLight}" HorizontalOptions="Center" VerticalOptions="Center" /></Border>
                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center"><Label Text="Pagamenti regolari" Style="{StaticResource TitleLarge}" /><Label Text="Gestisci scadenze e promemoria" Style="{StaticResource BodyMedium}" /></VerticalStackLayout>

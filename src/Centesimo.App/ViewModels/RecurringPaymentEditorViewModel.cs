@@ -27,13 +27,14 @@ public sealed class RecurringPaymentEditorViewModel : ObservableObject
     public event EventHandler? Saved;
     public ObservableCollection<ExpenseEditorViewModel.CategoryOption> Categories { get; } = [];
     public ObservableCollection<ExpenseEditorViewModel.TagOption> Tags { get; } = [];
-    public IReadOnlyList<RecurrenceFrequency> Frequencies { get; } = [RecurrenceFrequency.Weekly, RecurrenceFrequency.Monthly, RecurrenceFrequency.Yearly];
+    public IReadOnlyList<FrequencyOption> Frequencies { get; } = [new(RecurrenceFrequency.Weekly, "Settimanale"), new(RecurrenceFrequency.Monthly, "Mensile"), new(RecurrenceFrequency.Yearly, "Annuale")];
+    public FrequencyOption SelectedFrequency { get => Frequencies.Single(item => item.Value == Frequency); set => Frequency = value.Value; }
     public ICommand SaveCommand { get; }
     public string Title => _paymentId.HasValue ? "Modifica pagamento" : "Nuovo pagamento";
     public string Amount { get => _amount; set => SetProperty(ref _amount, value); }
     public ExpenseEditorViewModel.CategoryOption? SelectedCategory { get => _selectedCategory; set { SetProperty(ref _selectedCategory, value); foreach (var item in Categories) item.IsSelected = item == value; } }
     public ExpenseEditorViewModel.TagOption? SelectedTag { get => _selectedTag; set => SetProperty(ref _selectedTag, value); }
-    public RecurrenceFrequency Frequency { get => _frequency; set => SetProperty(ref _frequency, value); }
+    public RecurrenceFrequency Frequency { get => _frequency; set { if (SetProperty(ref _frequency, value)) OnPropertyChanged(nameof(SelectedFrequency)); } }
     public DateTime NextDueOn { get => _nextDueOn; set => SetProperty(ref _nextDueOn, value); }
     public DateTime? EndsOn { get => _endsOn; set => SetProperty(ref _endsOn, value); }
     public bool HasEndDate
@@ -102,4 +103,5 @@ public sealed class RecurringPaymentEditorViewModel : ObservableObject
         await _automation.ProcessDue();
         Saved?.Invoke(this, EventArgs.Empty);
     }
+    public sealed record FrequencyOption(RecurrenceFrequency Value, string Name);
 }

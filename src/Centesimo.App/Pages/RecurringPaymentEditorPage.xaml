@@ -25,7 +25,7 @@
                 </VerticalStackLayout>
                 <VerticalStackLayout Spacing="8">
                     <Label Text="RIPETIZIONE" Style="{StaticResource LabelLarge}" />
-                    <Border Style="{StaticResource FieldContainer}"><Picker ItemsSource="{Binding Frequencies}" SelectedItem="{Binding Frequency}" MinimumHeightRequest="48" /></Border>
+                    <Border Style="{StaticResource FieldContainer}"><Picker ItemsSource="{Binding Frequencies}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedFrequency}" MinimumHeightRequest="48" /></Border>
                     <Label Text="PROSSIMA SCADENZA" Style="{StaticResource LabelLarge}" />
                     <Border Style="{StaticResource FieldContainer}"><DatePicker Date="{Binding NextDueOn}" MinimumHeightRequest="48" /></Border>
                     <Grid ColumnDefinitions="*,Auto"><Label Text="FINE (FACOLTATIVA)" Style="{StaticResource LabelLarge}" VerticalOptions="Center" /><Switch Grid.Column="1" IsToggled="{Binding HasEndDate}" /></Grid>
